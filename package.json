@@ -1,7 +1,7 @@
 {
-  "name": "gift-exchange-project",
+  "name": "idk-do-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Un logiciel de suggestion d'idées cadeau",
   "main": "src/index.js",
   "scripts": {
     "start": "nodemon src/index.js localhost 8080"
