@@ -1,7 +1,7 @@
 var db = require("./database");
 module.exports = {
     loginGet: function(req, res) {
-        res.sendFile("./minifront/login.htm");
+        res.sendFile("./minifront/login.htm", { root: __dirname + "/.." });
     },
     loginPost: function(req, res) {
         //res.send("Bienvenue " + req.session.name + " avec le email " + req.session.email);
@@ -51,7 +51,7 @@ module.exports = {
         });
     },
     registerGet: function(req, res) {
-        res.sendFile("./minifront/register.htm");
+        res.sendFile("./minifront/register.htm", { root: __dirname + "/.." });
     },
     apiValidate: function(req, res) {
         db.validateAccount(req.body.key, result => {
