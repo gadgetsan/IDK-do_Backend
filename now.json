@@ -1,4 +1,10 @@
 {
     "name": "IDK-do_Backend",
-    "version": 2
+    "version": 2,
+    "builds": [
+        {
+            "src": "src/index.js",
+            "use": "@now/node"
+        }
+    ]
 }
