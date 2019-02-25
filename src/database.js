@@ -1,6 +1,6 @@
 const async = require("async");
 const sqlite3 = require("sqlite3").verbose();
-var dbFile = "db/test4.db";
+var dbFile = "/tmp/test4.db";
 
 var createTable = function(tableData, db, cb) {
     var sql = "CREATE TABLE IF NOT EXISTS " + tableData + ";";
