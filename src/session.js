@@ -1,5 +1,5 @@
-var db = require("./database");
-var debug = false;
+var db = require("./fbDatabase");
+var debug = true;
 module.exports.getUser = (req, cb) => {
     //si on reçoit le email et le password, c'est qu'il est en cours de de se looger donc on l'authentifie et on l'écrit dans la session
     if (req.baseUrl == "/web/login" || req.baseUrl == "/api/login") {
@@ -36,8 +36,8 @@ module.exports.getUser = (req, cb) => {
         if (debug) {
             req.session.logged = true;
             req.session.name = "DEBUG";
-            req.session.email = "test3@test.com";
-            req.session.rowid = 3;
+            req.session.email = "test1@test.com";
+            req.session.rowid = "kDnUmGz6PSCLPlRrAfxH";
         }
         if (req.session.logged || debug) {
             cb(true);

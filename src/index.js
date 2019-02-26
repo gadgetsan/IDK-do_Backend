@@ -2,12 +2,20 @@ var express = require("express");
 var cors = require("cors");
 var app = express();
 var http = require("http");
+const session = require("express-session");
 
 var connectCtrl = require("./connectController");
 var listCtrl = require("./listController");
-var db = require("./database");
+var db = require("./fbDatabase");
 var userSession = require("./session");
-//console.log("test");
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: true,
+        saveUninitialized: true
+    })
+);
 
 //on utilise le urlencoded sur le web et le jsonencoded dans l'API
 app.use("/web/*", express.urlencoded({ extended: true }));

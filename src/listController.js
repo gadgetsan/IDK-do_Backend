@@ -1,4 +1,4 @@
-var db = require("./database");
+var db = require("./fbDatabase");
 module.exports = {
     getList: function(req, res) {
         var share = `<p><a href="/web/shareList">Partager ma liste</a></p>`;

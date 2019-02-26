@@ -12,6 +12,8 @@
     "connect-sqlite3": "0.9.11",
     "cors": "2.8.5",
     "express": "latest",
+    "express-session": "1.15.6",
+    "firebase-admin": "7.0.0",
     "nodemailer": "5.1.1",
     "react": "16.7.0",
     "react-dom": "latest",

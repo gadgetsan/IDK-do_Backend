@@ -1,4 +1,4 @@
-var db = require("./database");
+var db = require("./fbDatabase");
 module.exports = {
     loginGet: function(req, res) {
         res.sendFile("./minifront/login.htm", { root: __dirname + "/.." });
