@@ -67,24 +67,26 @@ exports.validateUser = function(mail, password, callback) {
         .where("email", "==", mail)
         .limit(1)
         .get()
-        .then(snap => {
-            snap.forEach(doc => {
-                var user = doc.data();
-                var bcrypt = require("bcrypt");
-                bcrypt.compare(password, user.pw_hash, function(err, res) {
-                    user.rowid = doc.id;
-                    if (res) {
-                        callback(user);
-                    } else {
-                        // Passwords don't match
-                        callback(false);
-                    }
+        .then(
+            snap => {
+                snap.forEach(doc => {
+                    var user = doc.data();
+                    var bcrypt = require("bcrypt");
+                    bcrypt.compare(password, user.pw_hash, function(err, res) {
+                        user.rowid = doc.id;
+                        if (res) {
+                            callback(user);
+                        } else {
+                            // Passwords don't match
+                            callback(false);
+                        }
+                    });
                 });
-            });
-        })
-        .reject(() => {
-            console.error("Error while validating user");
-        });
+            },
+            error => {
+                console.error("Error while validating user: " + error);
+            }
+        );
 };
 
 exports.validateEmail = function(mail, callback) {
@@ -177,13 +179,14 @@ exports.createUser = function(email, password, name, callback) {
             pw_hash: hash,
             email: email,
             valid: 0
-        })
-            .then(newRef => {
+        }).then(
+            newRef => {
                 callback(true, newRef.id);
-            })
-            .reject(() => {
-                console.error("Error while creating user");
-            });
+            },
+            error => {
+                console.error("Error while creating user: " + error);
+            }
+        );
     });
 };
 
@@ -197,13 +200,14 @@ exports.createActionKey = function(action, userId, cb) {
     ref.set({
         key: key,
         type: action
-    })
-        .then(newRef => {
+    }).then(
+        newRef => {
             cb(null, key);
-        })
-        .reject(() => {
-            console.error("Error while creating action Key");
-        });
+        },
+        error => {
+            console.error("Error while creating action Key: " + error);
+        }
+    );
 };
 
 exports.addItem = function(name, description, link, userId, cb) {
@@ -216,13 +220,14 @@ exports.addItem = function(name, description, link, userId, cb) {
         name: name,
         description: description,
         link: link
-    })
-        .then(newRef => {
+    }).then(
+        newRef => {
             cb(null, newRef.id);
-        })
-        .reject(() => {
-            console.error("Error while adding item");
-        });
+        },
+        error => {
+            console.error("Error while adding item: " + error);
+        }
+    );
 };
 
 exports.removeItem = function(itemid, userid, cb) {
@@ -287,9 +292,8 @@ exports.getShares = function(userId, cb) {
 exports.getSharedToMe = function(myEmail, cb) {
     var db = exports.init();
     var ref = db.collection("shares").where("toEmail", "==", myEmail);
-    var query = ref
-        .get()
-        .then(snap => {
+    var query = ref.get().then(
+        snap => {
             exports.asyncSnap(
                 snap,
                 (value, callback) => {
@@ -307,10 +311,11 @@ exports.getSharedToMe = function(myEmail, cb) {
                     cb(doneArray);
                 }
             );
-        })
-        .reject(() => {
-            console.error("Error while getting lists that are shared to me");
-        });
+        },
+        error => {
+            console.error("Error while getting lists that are shared to me: " + error);
+        }
+    );
 };
 
 exports.getItemList = function(userId, cb) {
@@ -319,14 +324,14 @@ exports.getItemList = function(userId, cb) {
         .collection("items")
         .doc(userId)
         .collection("list");
-    var query = ref
-        .get()
-        .then(snap => {
+    var query = ref.get().then(
+        snap => {
             cb(exports.snapToList(snap));
-        })
-        .reject(() => {
-            console.error("Error while getting list of items");
-        });
+        },
+        () => {
+            console.error("Error while getting list of items: " + error);
+        }
+    );
 };
 
 exports.getSharedList = function(userId, cb) {
@@ -356,14 +361,15 @@ exports.getSharedList = function(userId, cb) {
 exports.getUser = function(userId, cb) {
     var db = exports.init();
     var ref = db.collection("users").doc(userId);
-    ref.get()
-        .then(snap => {
+    ref.get().then(
+        snap => {
             var user = snap.data();
             cb(user);
-        })
-        .reject(() => {
-            console.error("Error while getting user");
-        });
+        },
+        error => {
+            console.error("Error while getting user: " + error);
+        }
+    );
     /*
     exports.init(function(db, cb2) {
         var sql = "SELECT * FROM User Where rowid = ?";
@@ -387,13 +393,14 @@ exports.share = function(email, userId, cb) {
     ref.add({
         user: db.collection("users").doc(userId),
         toEmail: email
-    })
-        .then(newRef => {
+    }).then(
+        newRef => {
             cb(null, newRef.id);
-        })
-        .reject(() => {
-            console.error("Error while sharing a list");
-        });
+        },
+        error => {
+            console.error("Error while sharing a list: " + error);
+        }
+    );
 };
 
 exports.updatePassword = function(password, userId, cb) {
