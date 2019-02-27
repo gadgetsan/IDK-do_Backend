@@ -1,12 +1,18 @@
 var admin = require("firebase-admin");
 
 exports.init = function() {
-    console.log(process.env.firebase_private_key.substring(0, 100));
+    console.log(
+        Buffer.from(process.env.firebase_private_key_64, "base64")
+            .toString()
+            .substring(0, 8)
+    );
     var serviceAccount = {
         type: "service_account",
         project_id: "idk-do",
         private_key_id: process.env.firebase_private_key_id,
-        private_key: process.env.firebase_private_key.replace(/\\n/g, "\n"),
+        private_key: Buffer.from(process.env.firebase_private_key_64, "base64")
+            .toString()
+            .replace(/\\n/g, "\n"),
         client_email: process.env.firebase_client_email,
         client_id: process.env.firebase_client_id,
         auth_uri: "https://accounts.google.com/o/oauth2/auth",

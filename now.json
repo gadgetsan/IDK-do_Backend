@@ -23,6 +23,7 @@
         "firebase_client_x509_cert_url": "@firebase_client_x509_cert_url",
         "firebase_client_email": "@firebase_client_email",
         "firebase_private_key": "@firebase_private_key",
-        "firebase_client_id": "@firebase_client_id"
+        "firebase_client_id": "@firebase_client_id",
+        "firebase_private_key_64": "@firebase_private_key_64"
     }
 }
