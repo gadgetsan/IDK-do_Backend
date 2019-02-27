@@ -15,5 +15,14 @@
             "src": "/(.*)",
             "dest": "src/index.js"
         }
-    ]
+    ],
+    "env": {
+        "mail_password": "@mail_password",
+        "session_secret": "@session_secret",
+        "firebase_private_key_id": "@firebase_private_key_id",
+        "firebase_client_x509_cert_url": "@firebase_client_x509_cert_url",
+        "firebase_client_email": "@firebase_client_email",
+        "firebase_private_key": "@firebase_private_key",
+        "firebase_client_id": "@firebase_client_id"
+    }
 }
