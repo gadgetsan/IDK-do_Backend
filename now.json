@@ -5,7 +5,9 @@
         {
             "src": "**/*.js",
             "use": "@now/node-server",
-            "maxLambdaSize": "30mb"
+            "config": {
+                "maxLambdaSize": "50mb"
+            }
         }
     ],
     "routes": [
