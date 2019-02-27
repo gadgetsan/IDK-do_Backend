@@ -11,7 +11,7 @@ var userSession = require("./session");
 
 app.use(
     session({
-        secret: process.env.SESSION_SECRET,
+        secret: process.env.session_secret,
         resave: true,
         saveUninitialized: true
     })
