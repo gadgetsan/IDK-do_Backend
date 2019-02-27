@@ -1,5 +1,5 @@
 var db = require("./fbDatabase");
-var debug = true;
+var debug = false;
 module.exports.getUser = (req, cb) => {
     //si on reçoit le email et le password, c'est qu'il est en cours de de se looger donc on l'authentifie et on l'écrit dans la session
     if (req.baseUrl == "/web/login" || req.baseUrl == "/api/login") {
