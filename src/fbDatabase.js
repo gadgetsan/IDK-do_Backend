@@ -1,7 +1,7 @@
 var admin = require("firebase-admin");
 
 exports.init = function() {
-    console.log(process.env.firebase_private_key.substring(0, 25));
+    console.log(process.env.firebase_private_key.substring(0, 100));
     var serviceAccount = {
         type: "service_account",
         project_id: "idk-do",
