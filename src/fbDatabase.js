@@ -328,7 +328,7 @@ exports.getItemList = function(userId, cb) {
         snap => {
             cb(exports.snapToList(snap));
         },
-        () => {
+        error => {
             console.error("Error while getting list of items: " + error);
         }
     );
