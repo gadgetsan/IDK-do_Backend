@@ -85,6 +85,7 @@ exports.validateUser = function(mail, password, callback) {
             },
             error => {
                 console.error("Error while validating user: " + error);
+                callback(false);
             }
         );
 };
@@ -185,6 +186,7 @@ exports.createUser = function(email, password, name, callback) {
             },
             error => {
                 console.error("Error while creating user: " + error);
+                callback(false);
             }
         );
     });
@@ -206,6 +208,7 @@ exports.createActionKey = function(action, userId, cb) {
         },
         error => {
             console.error("Error while creating action Key: " + error);
+            cb(false);
         }
     );
 };
@@ -226,6 +229,7 @@ exports.addItem = function(name, description, link, userId, cb) {
         },
         error => {
             console.error("Error while adding item: " + error);
+            cb(false);
         }
     );
 };
@@ -314,6 +318,7 @@ exports.getSharedToMe = function(myEmail, cb) {
         },
         error => {
             console.error("Error while getting lists that are shared to me: " + error);
+            cb(false);
         }
     );
 };
@@ -330,6 +335,7 @@ exports.getItemList = function(userId, cb) {
         },
         error => {
             console.error("Error while getting list of items: " + error);
+            cb([]);
         }
     );
 };
@@ -368,6 +374,7 @@ exports.getUser = function(userId, cb) {
         },
         error => {
             console.error("Error while getting user: " + error);
+            cb(null);
         }
     );
     /*
@@ -399,6 +406,7 @@ exports.share = function(email, userId, cb) {
         },
         error => {
             console.error("Error while sharing a list: " + error);
+            cb(false);
         }
     );
 };
