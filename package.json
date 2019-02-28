@@ -7,7 +7,7 @@
         "start": "nodemon src/index.js localhost 8080"
     },
     "dependencies": {
-        "@google-cloud/firestore": "1.0.1",
+        "@google-cloud/firestore": "1.0.0",
         "async": "2.6.1",
         "bcrypt": "3.0.3",
         "cors": "2.8.5",

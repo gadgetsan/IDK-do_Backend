@@ -2,10 +2,10 @@
 # yarn lockfile v1
 
 
-"@google-cloud/firestore@1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-1.0.1.tgz#7e8fd44e026dc3cd28663ec9050bc1bc2f708fae"
-  integrity sha512-h8DxYkrP62VZjmwUJWwsm9F+fUagne2ANML9eIOPT3JWBS+41ZBxNgxOjH8hR5Htxz6GD+xsrr0KYxKBd1eepQ==
+"@google-cloud/firestore@1.0.0":
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/@google-cloud/firestore/-/firestore-1.0.0.tgz#3c2928bf4a379d5d2da727903433f5463aa97053"
+  integrity sha512-r2M6xhe7g5eeplofCCQppc7ttKEQwaV14lYRJRwRg9scDPr0gfKUwYMDRUA+MPandzgpyoZLw2P3cslM6bQUNA==
   dependencies:
     "@google-cloud/projectify" "^0.3.0"
     bun "^0.0.12"
