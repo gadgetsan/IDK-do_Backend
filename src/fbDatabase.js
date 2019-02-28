@@ -1,11 +1,15 @@
-var admin = require("firebase-admin");
+//var admin = require("firebase-admin");
+
+const Firestore = require("@google-cloud/firestore");
 
 exports.init = function() {
+    /*
     console.log(
         Buffer.from(process.env.firebase_private_key_64, "base64")
             .toString()
             .substring(0, 100)
     );
+    */
     var serviceAccount = {
         type: "service_account",
         project_id: "idk-do",
@@ -20,14 +24,21 @@ exports.init = function() {
         auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
         client_x509_cert_url: process.env.firebase_client_x509_cert_url
     };
+    /*
     if (!admin.apps.length) {
         admin.initializeApp({
             credential: admin.credential.cert(serviceAccount),
             databaseURL: "https://idk-do.firebaseio.com"
         });
     }
-
     var fbdb = admin.firestore();
+    */
+
+    var fbdb = new Firestore({
+        credentials: serviceAccount,
+        projectId: "idk-do"
+    });
+
     return fbdb;
 };
 
