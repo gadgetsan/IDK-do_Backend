@@ -4,10 +4,10 @@
     "description": "Un logiciel de suggestion d'idées cadeau",
     "main": "src/index.js",
     "scripts": {
-        "start": "nodemon src/index.js localhost 8080"
+        "start": "node src/index.js"
     },
     "dependencies": {
-        "@google-cloud/firestore": "1.0.0",
+        "@google-cloud/firestore": "1.0.1",
         "async": "2.6.1",
         "bcrypt": "3.0.3",
         "cors": "2.8.5",
@@ -22,7 +22,7 @@
         "nodemon": "latest"
     },
     "engines": {
-        "node": "8.14"
+        "node": ">=8"
     },
     "keywords": []
 }

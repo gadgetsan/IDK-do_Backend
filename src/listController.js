@@ -88,13 +88,8 @@ module.exports = {
         });
     },
     apiAddItem: function(req, res) {
-        db.addItem(req.body.name, req.body.description, req.body.link, req.session.rowid, function(err, newRowId) {
-            if (err) {
-                console.error(err.message);
-                res.send(false);
-            } else {
-                res.send(newRowId.toString());
-            }
+        db.addItem(req.body.name, req.body.description, req.body.link, req.session.rowid, function(newId) {
+            res.send(JSON.stringify(newId));
         });
     },
     apiAddShare: function(req, res) {
@@ -103,7 +98,7 @@ module.exports = {
                 console.error(err.message);
                 res.send(false);
             } else {
-                res.send(newRowId.toString());
+                res.send(JSON.stringify(newRowId));
             }
         });
     },
@@ -129,7 +124,7 @@ module.exports = {
     },
     apiMarkBought: function(req, res) {
         var datetime = new Date();
-        db.markAsBought(req.body.rowid, datetime, req.session.rowid, function(err) {
+        db.markAsBought(req.body.rowid, datetime, req.session.rowid, req.body.owner, function(err) {
             if (err) {
                 console.error(err.message);
                 res.send(false);

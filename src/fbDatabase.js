@@ -3,13 +3,6 @@
 const Firestore = require("@google-cloud/firestore");
 
 exports.init = function() {
-    /*
-    console.log(
-        Buffer.from(process.env.firebase_private_key_64, "base64")
-            .toString()
-            .substring(0, 100)
-    );
-    */
     var serviceAccount = {
         type: "service_account",
         project_id: "idk-do",
@@ -45,7 +38,9 @@ exports.init = function() {
 exports.snapToList = function(snap) {
     var list = [];
     for (var i = 0; i < snap.docs.length; i++) {
-        list.push(snap.docs[i].data());
+        var toPush = snap.docs[i].data();
+        toPush.rowid = snap.docs[i].id;
+        list.push(toPush);
     }
     return list;
 };
@@ -57,7 +52,7 @@ exports.asyncSnap = function(snap, itemCB, doneCB) {
         doneCB(list);
     }
     snap.forEach((doc, index, array) => {
-        itemCB(doc, result => {
+        itemCB(doc, index, result => {
             list.push(result);
             itemsProcessed++;
             if (itemsProcessed === snap.docs.length) {
@@ -85,7 +80,7 @@ exports.validateUser = function(mail, password, callback) {
                     var bcrypt = require("bcrypt");
                     bcrypt.compare(password, user.pw_hash, function(err, res) {
                         user.rowid = doc.id;
-                        if (res) {
+                        if (res && user.valid == 1) {
                             callback(user);
                         } else {
                             // Passwords don't match
@@ -102,82 +97,67 @@ exports.validateUser = function(mail, password, callback) {
 };
 
 exports.validateEmail = function(mail, callback) {
-    /*
-    exports.init(function(db, cb) {
-        db.get("SELECT rowid, * FROM User WHERE email=? AND Valid=1;", mail, (err, row) => {
-            if (row) {
-                //on a trouvé l'usilitateur, on envoie le id
-                //console.log(JSON.stringify(row));
-                callback(err, row.rowid);
-            } else {
-                //la rquête n'as rien retourné;
-                callback(err, null);
+    if (mail == undefined) {
+        callback(false);
+        return;
+    }
+    var db = exports.init();
+    var ref = db.collection("users");
+    var query = ref
+        .where("email", "==", mail)
+        .limit(1)
+        .get()
+        .then(
+            snap => {
+                snap.forEach(doc => {
+                    var user = doc.data();
+                    callback(null, doc.id);
+                });
+            },
+            error => {
+                console.error("Error while validating user: " + error);
+                callback(error, null);
             }
-        });
-    });
-    */
-    callback("NOT IMPLEMENTED");
+        );
 };
 
 exports.validateAccount = function(key, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        //console.log("key: " + key);
-        db.get("SELECT user, * FROM MailKey WHERE key=?;", key, (err, row) => {
-            if (err) {
-                console.error(err.message);
-                cb2(() => {
-                    cb(false);
+    exports.validateKey(key, keyData => {
+        //console.log(keyData);
+        if (keyData.type == "validate") {
+            var userId = keyData.user;
+            var db = exports.init();
+            var ref = db
+                .collection("users")
+                .doc(userId)
+                .update("valid", 1)
+                .then(() => {
+                    cb(true);
+                })
+                .catch(function(error) {
+                    console.error("Error while marking user as Valid: " + error);
+                    cb(error);
                 });
-            } else if (row) {
-                //console.log(row.user);
-                //on a le rownum de l'utilisateur en question, on va aller changer la valeur de 'valid'
-                db.run("UPDATE User SET valid = ? WHERE rowid = ?", [1, row.user], function(err) {
-                    if (err) {
-                        console.error(err.message);
-                    }
-                    cb2(err => {
-                        if (!err) {
-                            cb(true);
-                        }
-                    });
-                });
-            } else {
-                //la rquête n'as rien retourné;
-                cb2(() => {
-                    cb(false);
-                });
-            }
-        });
+        } else {
+            cb(false);
+        }
     });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
 exports.validateKey = function(key, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        //console.log("key: " + key);
-        db.get("SELECT user, * FROM MailKey WHERE key=?;", key, (err, row) => {
-            if (err) {
-                console.error(err.message);
-                cb2(() => {
-                    cb(false);
-                });
-            } else if (row) {
-                cb2(() => {
-                    cb(true, row.user, row.type);
-                });
+    var db = exports.init();
+    var ref = db.collection("mail_keys");
+    var query = ref
+        .doc(key)
+        .get()
+        .then(doc => {
+            if (doc.exists) {
+                cb(doc.data());
             } else {
-                //la rquête n'as rien retourné;
-                cb2(() => {
-                    cb(false);
-                });
+                console.error("CETTE CLÉ N'EXISTE PAS: " + key);
+                cb(null);
             }
         });
-    });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
 //UPDATED
@@ -209,9 +189,9 @@ exports.createActionKey = function(action, userId, cb) {
     var key = uuidv1();
 
     var db = exports.init();
-    var ref = db.collection("mail_keys").doc(userId);
+    var ref = db.collection("mail_keys").doc(key);
     ref.set({
-        key: key,
+        user: userId,
         type: action
     }).then(
         newRef => {
@@ -236,7 +216,7 @@ exports.addItem = function(name, description, link, userId, cb) {
         link: link
     }).then(
         newRef => {
-            cb(null, newRef.id);
+            cb(newRef.id);
         },
         error => {
             console.error("Error while adding item: " + error);
@@ -246,54 +226,50 @@ exports.addItem = function(name, description, link, userId, cb) {
 };
 
 exports.removeItem = function(itemid, userid, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        db.run("DELETE FROM Item WHERE rowid = ?", [itemid], function(err) {
-            if (err) {
-                console.error(err.message);
-            }
-            cb2(err => {
-                cb(err);
-            });
+    //TODO: valider que la personne qui veut supprimer est propriétaire
+    var db = exports.init();
+    //console.log("item: " + itemid + ", user: " + userid);
+    var ref = db
+        .collection("items")
+        .doc(userid)
+        .collection("list")
+        .doc(itemid)
+        .delete()
+        .then(cb)
+        .catch(function(error) {
+            console.error("Error while deleting item: " + error);
+            cb(error);
         });
-    });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
-exports.markAsBought = function(itemid, date, userid, cb) {
-    /*
-    console.log(itemid);
-    console.log(date);
-    console.log(userid);
-    exports.init(function(db, cb2) {
-        db.run("UPDATE Item SET boughtOn = ?, boughtUser = ? WHERE rowid = ?", [date, userid, itemid], function(err) {
-            if (err) {
-                console.error(err.message);
-            }
-            cb2(err => {
-                cb(err);
-            });
+exports.markAsBought = function(itemid, date, userid, ownerId, cb) {
+    var db = exports.init();
+    var ref = db
+        .collection("items")
+        .doc(ownerId)
+        .collection("list")
+        .doc(itemid)
+        .update("boughtOn", date, "boughtUser", userid)
+        .then(cb)
+        .catch(function(error) {
+            console.error("Error while modifying item: " + error);
+            cb(error);
         });
-    });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
 exports.removeShare = function(itemid, userid, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        db.run("DELETE FROM Share WHERE rowid = ?", [itemid], function(err) {
-            if (err) {
-                console.error(err.message);
-            }
-            cb2(err => {
-                cb(err);
-            });
+    //TODO: valider que la personne qui veut supprimer est propriétaire
+    var db = exports.init();
+    //console.log("item: " + itemid + ", user: " + userid);
+    var ref = db
+        .collection("shares")
+        .doc(itemid)
+        .delete()
+        .then(cb)
+        .catch(function(error) {
+            console.error("Error while deleting item: " + error);
+            cb(error);
         });
-    });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
 exports.getShares = function(userId, cb) {
@@ -311,18 +287,19 @@ exports.getSharedToMe = function(myEmail, cb) {
         snap => {
             exports.asyncSnap(
                 snap,
-                (value, callback) => {
+                (value, index, callback) => {
                     var toReturn = value.data();
                     //on va aller cher cher le user et ajouter les informations dont on a besoin
                     toReturn.user.get().then(doc => {
                         var user = doc.data();
                         toReturn.name = user.name;
                         toReturn.email = user.email;
+                        toReturn.rowid = doc.id;
                         callback(toReturn);
                     });
                 },
                 doneArray => {
-                    console.log(doneArray);
+                    //console.log(doneArray);
                     cb(doneArray);
                 }
             );
@@ -342,7 +319,20 @@ exports.getItemList = function(userId, cb) {
         .collection("list");
     var query = ref.get().then(
         snap => {
-            cb(exports.snapToList(snap));
+            exports.asyncSnap(
+                snap,
+                (value, index, callback) => {
+                    var toReturn = value.data();
+                    //on doit mettre la clé dans le rowid
+                    toReturn.rowid = value.id;
+                    //console.log(toReturn);
+                    callback(toReturn);
+                },
+                doneArray => {
+                    //console.log(doneArray);
+                    cb(doneArray);
+                }
+            );
         },
         error => {
             console.error("Error while getting list of items: " + error);
@@ -352,27 +342,33 @@ exports.getItemList = function(userId, cb) {
 };
 
 exports.getSharedList = function(userId, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        var sql = "SELECT rowid, * FROM Item Where User = ?";
-        var rowList = [];
-        db.each(
-            sql,
-            [userId],
-            (err, result) => {
-                // process each row here
-                rowList.push(result);
-            },
-            (err, rows) => {
-                //console.log(JSON.stringify(rowList));
-                cb2(() => {
-                    cb(rowList);
-                });
-            }
-        );
-    });
-    */
-    cb("NOT IMPLEMENTED");
+    var db = exports.init();
+    var ref = db
+        .collection("items")
+        .doc(userId)
+        .collection("list");
+    var query = ref.get().then(
+        snap => {
+            exports.asyncSnap(
+                snap,
+                (value, index, callback) => {
+                    var toReturn = value.data();
+                    //on doit mettre la clé dans le rowid
+                    toReturn.rowid = value.id;
+                    //console.log(toReturn);
+                    callback(toReturn);
+                },
+                doneArray => {
+                    //console.log(doneArray);
+                    cb(doneArray);
+                }
+            );
+        },
+        error => {
+            console.error("Error while getting list of items: " + error);
+            cb([]);
+        }
+    );
 };
 
 exports.getUser = function(userId, cb) {
@@ -388,21 +384,6 @@ exports.getUser = function(userId, cb) {
             cb(null);
         }
     );
-    /*
-    exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM User Where rowid = ?";
-        var rowList = [];
-        db.get(sql, [userId], (err, result) => {
-            if (err) {
-                console.error(err.message);
-            }
-            cb2(() => {
-                cb(result);
-            });
-        });
-    });
-    */
-    cb("NOT IMPLEMENTED");
 };
 
 exports.share = function(email, userId, cb) {
@@ -423,15 +404,20 @@ exports.share = function(email, userId, cb) {
 };
 
 exports.updatePassword = function(password, userId, cb) {
-    /*
-    exports.init(function(db, cb2) {
-        var bcrypt = require("bcrypt");
-        bcrypt.hash(password, 10, function(err, hash) {
-            db.run("UPDATE User SET PwHash = ? WHERE rowid = ?", [hash, userId], function(err) {
-                cb2(cb);
+    var db = exports.init();
+    var bcrypt = require("bcrypt");
+
+    bcrypt.hash(password, 10, function(err, hash) {
+        var ref = db
+            .collection("users")
+            .doc(userId)
+            .update("pw_hash", hash)
+            .then(() => {
+                cb(true);
+            })
+            .catch(function(error) {
+                console.error("Error while marking user as Valid: " + error);
+                cb(error);
             });
-        });
     });
-    */
-    cb("NOT IMPLEMENTED");
 };

@@ -36,7 +36,7 @@ module.exports = {
                     from: "stephaneblitz@gmail.com",
                     to: req.body.email,
                     subject: "Validation de votre compte pour le logiciel d'échange de cadeaux",
-                    text: "Pour valider votre compte utilisateur, utilisez le lien suivant: https://p7m62xk0r7.codesandbox.io/Validation?key=" + key
+                    text: "Pour valider votre compte utilisateur, utilisez le lien suivant: " + process.env.SERVER_LINK + "/Validation?key=" + key
                 };
 
                 transporter.sendMail(mailOptions, function(error, info) {
@@ -81,7 +81,10 @@ module.exports = {
                         subject: "Modification de votre mot de passe",
                         text:
                             `Une personne à fait une demande pour modifier votre mot de passe (si ce n'est pas vous, vous pouvez ne pas porter attention à ce courriel ),
-                         cliquez sur le lien suivant pour le modifier: https://p7m62xk0r7.codesandbox.io/Password?key=` + key
+                         cliquez sur le lien suivant pour le modifier: ` +
+                            process.env.SERVER_LINK +
+                            `/Password?key=` +
+                            key
                     };
 
                     transporter.sendMail(mailOptions, function(error, info) {
@@ -100,9 +103,9 @@ module.exports = {
     },
     apiPasswordChange: function(req, res) {
         //on commence par valider que le la clé existe
-        db.validateKey(req.body.key, (err, userId, type) => {
+        db.validateKey(req.body.key, keyData => {
             //on met à jour le mot de passe
-            db.updatePassword(req.body.password, userId, (err, userId, type) => {
+            db.updatePassword(req.body.password, keyData.user, (err, userId, type) => {
                 res.send("ok");
             });
         });
