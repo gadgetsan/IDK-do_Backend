@@ -17,15 +17,6 @@ exports.init = function() {
         auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
         client_x509_cert_url: process.env.firebase_client_x509_cert_url
     };
-    /*
-    if (!admin.apps.length) {
-        admin.initializeApp({
-            credential: admin.credential.cert(serviceAccount),
-            databaseURL: "https://idk-do.firebaseio.com"
-        });
-    }
-    var fbdb = admin.firestore();
-    */
 
     var fbdb = new Firestore({
         credentials: serviceAccount,
@@ -420,4 +411,36 @@ exports.updatePassword = function(password, userId, cb) {
                 cb(error);
             });
     });
+};
+
+exports.experiment = function(userId, cb) {
+    //cb([{ name: "test" }]);
+
+    var db = exports.init();
+    var ref = db
+        .collection("items")
+        .doc(userId)
+        .collection("list");
+    var query = ref.get().then(
+        snap => {
+            exports.asyncSnap(
+                snap,
+                (value, index, callback) => {
+                    var toReturn = value.data();
+                    //on doit mettre la clé dans le rowid
+                    toReturn.rowid = value.id;
+                    //console.log(toReturn);
+                    callback(toReturn);
+                },
+                doneArray => {
+                    //console.log(doneArray);
+                    cb(doneArray);
+                }
+            );
+        },
+        error => {
+            console.error("Error while getting list of items: " + error);
+            cb([]);
+        }
+    );
 };

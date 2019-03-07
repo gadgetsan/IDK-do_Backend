@@ -1,4 +1,4 @@
-var db = require("./fbDatabase");
+var db = require("./sqlDatabase");
 module.exports = {
     getList: function(req, res) {
         var share = `<p><a href="/web/shareList">Partager ma liste</a></p>`;
@@ -51,6 +51,11 @@ module.exports = {
     },
     apiList: function(req, res) {
         db.getItemList(req.session.rowid, result => {
+            res.send(result);
+        });
+    },
+    experiment: function(req, res) {
+        db.init(result => {
             res.send(result);
         });
     },

@@ -82,5 +82,6 @@ app.post("/api/addShare", listCtrl.apiAddShare);
 app.post("/api/deleteIdea", listCtrl.apiRemoveItem);
 app.post("/api/deleteShare", listCtrl.apiRemoveShare);
 app.post("/api/boughtItem", listCtrl.apiMarkBought);
+app.get("/api/experiment", listCtrl.experiment);
 
 app.listen(8080);

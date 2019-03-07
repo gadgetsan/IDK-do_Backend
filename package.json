@@ -1,28 +1,30 @@
 {
-    "name": "idk-do-backend",
-    "version": "1.0.0",
-    "description": "Un logiciel de suggestion d'idées cadeau",
-    "main": "src/index.js",
-    "scripts": {
-        "start": "node src/index.js"
-    },
-    "dependencies": {
-        "@google-cloud/firestore": "1.0.1",
-        "async": "2.6.1",
-        "bcrypt": "3.0.3",
-        "cors": "2.8.5",
-        "express": "latest",
-        "express-session": "1.15.6",
-        "nodemailer": "5.1.1",
-        "react": "16.7.0",
-        "react-dom": "latest",
-        "uuid": "3.3.2"
-    },
-    "devDependencies": {
-        "nodemon": "latest"
-    },
-    "engines": {
-        "node": ">=8"
-    },
-    "keywords": []
+  "name": "idk-do-backend",
+  "version": "1.0.0",
+  "description": "Un logiciel de suggestion d'idées cadeau",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "1.0.1",
+    "async": "2.6.1",
+    "bcrypt": "3.0.3",
+    "cors": "2.8.5",
+    "express": "latest",
+    "express-session": "1.15.6",
+    "mysql": "2.16.0",
+    "nodemailer": "5.1.1",
+    "react": "16.7.0",
+    "react-dom": "latest",
+    "sqlite3": "4.0.6",
+    "uuid": "3.3.2"
+  },
+  "devDependencies": {
+    "nodemon": "latest"
+  },
+  "engines": {
+    "node": ">=8"
+  },
+  "keywords": []
 }

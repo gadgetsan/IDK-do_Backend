@@ -1,4 +1,4 @@
-var db = require("./fbDatabase");
+var db = require("./sqlDatabase");
 var debug = false;
 module.exports.getUser = (req, cb) => {
     //si on reçoit le email et le password, c'est qu'il est en cours de de se looger donc on l'authentifie et on l'écrit dans la session
@@ -37,7 +37,7 @@ module.exports.getUser = (req, cb) => {
             req.session.logged = true;
             req.session.name = "DEBUG";
             req.session.email = "test1@test.com";
-            req.session.rowid = "kDnUmGz6PSCLPlRrAfxH";
+            req.session.rowid = "4";
         }
         if (req.session.logged || debug) {
             cb(true);
