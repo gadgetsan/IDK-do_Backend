@@ -184,6 +184,16 @@ exports.addItem = function(name, description, link, userId, cb) {
     });
 };
 
+exports.editItem = function(name, description, link, userId, itemId, cb) {
+    exports.init(function(db, cb2) {
+        db.query("UPDATE Item SET name=?, description=?, link=? WHERE rowid=?", [name, description, link, itemId], function(err, result) {
+            cb2(err => {
+                cb(err);
+            });
+        });
+    });
+};
+
 exports.removeItem = function(itemid, userid, cb) {
     exports.init(function(db, cb2) {
         db.query("DELETE FROM Item WHERE rowid = ?", [itemid], function(err) {
@@ -200,6 +210,19 @@ exports.removeItem = function(itemid, userid, cb) {
 exports.markAsBought = function(itemid, date, userid, owner, cb) {
     exports.init(function(db, cb2) {
         db.query("UPDATE Item SET boughtOn = ?, boughtUser = ? WHERE rowid = ?", [date, userid, itemid], function(err) {
+            if (err) {
+                console.error(err.message);
+            }
+            cb2(err => {
+                cb(err);
+            });
+        });
+    });
+};
+
+exports.cancelBought = function(itemid, userid, owner, cb) {
+    exports.init(function(db, cb2) {
+        db.query("UPDATE Item SET boughtOn = NULL, boughtUser = NULL WHERE rowid = ? AND boughtUser = ?", [itemid, userid], function(err) {
             if (err) {
                 console.error(err.message);
             }

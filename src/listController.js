@@ -97,15 +97,30 @@ module.exports = {
             res.send(JSON.stringify(newId));
         });
     },
-    apiAddShare: function(req, res) {
-        db.share(req.body.shareEmail, req.session.rowid, function(err, newRowId) {
+    apiEditItem: function(req, res) {
+        db.editItem(req.body.name, req.body.description, req.body.link, req.session.rowid, req.body.rowid, function(err) {
             if (err) {
                 console.error(err.message);
                 res.send(false);
             } else {
-                res.send(JSON.stringify(newRowId));
+                res.send(true);
             }
         });
+    },
+    apiAddShare: function(req, res) {
+        if (req.body.shareEmail != req.session.email) {
+            db.share(req.body.shareEmail, req.session.rowid, function(err, newRowId) {
+                if (err) {
+                    console.error(err.message);
+                    res.send(false);
+                } else {
+                    res.send(JSON.stringify(newRowId));
+                }
+            });
+        } else {
+            console.log("you can't share your list with yourself");
+            res.send(false);
+        }
     },
     apiRemoveItem: function(req, res) {
         db.removeItem(req.body.rowid, req.body.userid, function(err) {
@@ -130,6 +145,17 @@ module.exports = {
     apiMarkBought: function(req, res) {
         var datetime = new Date();
         db.markAsBought(req.body.rowid, datetime, req.session.rowid, req.body.owner, function(err) {
+            if (err) {
+                console.error(err.message);
+                res.send(false);
+            } else {
+                res.send(true);
+            }
+        });
+    },
+    apiCancelBought: function(req, res) {
+        var datetime = new Date();
+        db.cancelBought(req.body.rowid, req.session.rowid, req.body.owner, function(err) {
             if (err) {
                 console.error(err.message);
                 res.send(false);

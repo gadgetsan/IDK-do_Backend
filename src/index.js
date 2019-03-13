@@ -78,10 +78,12 @@ app.get("/api/sharedWithMe", listCtrl.apiSharedWithMe);
 app.get("/api/sharedList", listCtrl.apiSharedList);
 app.get("/api/user", listCtrl.apiGetUser);
 app.post("/api/addIdea", listCtrl.apiAddItem);
+app.post("/api/editIdea", listCtrl.apiEditItem);
 app.post("/api/addShare", listCtrl.apiAddShare);
 app.post("/api/deleteIdea", listCtrl.apiRemoveItem);
 app.post("/api/deleteShare", listCtrl.apiRemoveShare);
 app.post("/api/boughtItem", listCtrl.apiMarkBought);
+app.post("/api/cancelBought", listCtrl.apiCancelBought);
 app.get("/api/experiment", listCtrl.experiment);
 
 app.listen(8080);
