@@ -1,7 +1,7 @@
 var db = require("./sqlDatabase");
 module.exports = {
     loginGet: function(req, res) {
-        res.sendFile("./minifront/login.htm", { root: __dirname + "/.." });
+        res.sendFile("./minifront/login.htm", { root: __dirname + "/../.." });
     },
     loginPost: function(req, res) {
         //res.send("Bienvenue " + req.session.name + " avec le email " + req.session.email);
