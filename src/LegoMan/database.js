@@ -551,6 +551,42 @@ exports.createUser = function(email, password, name, callback) {
     });
 };
 
+exports.validateUser = function(mail, password, callback) {
+    //console.log("mail: " + mail + " password: " + password);
+    exports.init(function(db, cb) {
+        db.query("SELECT * FROM User WHERE email=? AND valid=1;", [mail], (err, row) => {
+            if (err) {
+                console.error(err.message);
+                cb(() => {
+                    callback(false);
+                });
+            } else if (row && row.length == 1) {
+                //on a trouvé l'usilitateur, on valide le mot de passe
+                //console.log(JSON.stringify(row));
+                var bcrypt = require("bcrypt");
+                bcrypt.compare(password, row[0].PwHash, function(err, res) {
+                    if (res) {
+                        // Passwords match
+                        cb(() => {
+                            callback(row[0]);
+                        });
+                    } else {
+                        // Passwords don't match
+                        cb(() => {
+                            callback(false);
+                        });
+                    }
+                });
+            } else {
+                //la rquête n'as rien retourné;
+                cb(() => {
+                    callback(false);
+                });
+            }
+        });
+    });
+};
+
 exports.createActionKey = function(action, userId, cb) {
     const uuidv1 = require("uuid/v1");
     var key = uuidv1();

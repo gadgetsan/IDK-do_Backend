@@ -7,6 +7,7 @@ const session = require("express-session");
 var connectCtrl = require("./idk-do/connectController");
 var listCtrl = require("./idk-do/listController");
 var idkdoUserSession = require("./idk-do/session");
+var legoUserSession = require("./LegoMan/session");
 
 var legoSession = require("./LegoMan/legoConnect");
 var legoCtrl = require("./LegoMan/legoController");
@@ -59,8 +60,8 @@ app.use("/api/*", function userMiddleware(req, res, next) {
 app.use("/lego/*", function userMiddleware(req, res, next) {
     //console.log(req.baseUrl);
     //a ajouter quand on va avoir fait le login
-    /*
-    legoSession.getUser(req, result => {
+    legoUserSession.getUser(req, result => {
+        console.dir(result);
         if (
             !result &&
             req.baseUrl != "/api/register" &&
@@ -73,8 +74,6 @@ app.use("/lego/*", function userMiddleware(req, res, next) {
             next();
         }
     });
-    */
-    next();
 });
 
 app.get("/", function(req, res) {
@@ -132,5 +131,6 @@ app.post("/lego/fetchSet", legoCtrl.fetchRebrikableSet);
 app.get("/lego/cleanup", legoCtrl.cleanup);
 
 app.post("/lego/register", legoSession.apiRegister);
+app.post("/lego/login", legoSession.apiLogin);
 
 app.listen(8080);
