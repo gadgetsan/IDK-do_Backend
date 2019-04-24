@@ -362,3 +362,32 @@ exports.updatePassword = function(password, userId, cb) {
         });
     });
 };
+
+exports.addSecretMessage = function(ideaId, text, userId, cb) {
+    exports.init(function(db, cb2) {
+        db.query("INSERT INTO ItemMessage(item, text, user) VALUES(?, ?, ?)", [ideaId, text, userId], function(err, result) {
+            if (err) {
+                console.error(err.message);
+            }
+            var newRowId = result.insertId;
+            cb2(err => {
+                cb(newRowId);
+            });
+        });
+    });
+};
+
+exports.getSecretMessages = function(itemId, cb) {
+    exports.init(function(db, cb2) {
+        var sql = "SELECT * FROM ItemMessage Where item = ?";
+        var rowList = [];
+        db.query(sql, [itemId], (err, result, fields) => {
+            if (err) {
+                console.error(err.message);
+            }
+            cb2(() => {
+                cb(result);
+            });
+        });
+    });
+};

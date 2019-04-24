@@ -176,5 +176,17 @@ module.exports = {
                 res.redirect("/web/list");
             }
         });
+    },
+    apiAddSecretMessage: function(req, res) {
+        //console.dir(req.body);
+        db.addSecretMessage(req.body.ideaId, req.body.message, req.session.rowid, function(newId) {
+            res.send(JSON.stringify(newId));
+        });
+    },
+    apiGetSecretMessages: function(req, res) {
+        //console.dir(req.query);
+        db.getSecretMessages(req.query.itemId, result => {
+            res.send(result);
+        });
     }
 };
