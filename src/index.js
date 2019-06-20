@@ -136,4 +136,4 @@ app.get("/lego/cleanup", legoCtrl.cleanup);
 app.post("/lego/register", legoSession.apiRegister);
 app.post("/lego/login", legoSession.apiLogin);
 
-app.listen(8080);
+app.listen(process.env.PORT || 8080);
