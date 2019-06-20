@@ -34,12 +34,13 @@ module.exports = {
     },
 
     getSets: function(req, res) {
+        console.dir("search: " + req.query.searchTerm);
         if (req.query.searchTerm == undefined || req.query.searchTerm == "") {
             db.getSets(20, req.query.currentPage, function(result) {
                 res.send(result);
             });
         } else {
-            db.searchParts(20, req.query.currentPage, req.query.searchTerm, function(result) {
+            db.searchSets(20, req.query.currentPage, req.query.searchTerm, function(result) {
                 res.send(result);
             });
         }
@@ -106,6 +107,13 @@ module.exports = {
     },
     getSortedPartsStats: function(req, res) {
         db.getSortedPartsStats(function(result) {
+            res.send(result);
+        });
+    },
+    updateSetQuantity: function(req, res) {
+        //console.dir("setID: " + req.body.setId + ", qt: " + req.body.quantity + " , userId: " + req.session.userId);
+
+        db.updateSetOwnership(req.body.setId, req.body.quantity, req.session.userId, function(result) {
             res.send(result);
         });
     },

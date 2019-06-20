@@ -9,7 +9,7 @@ module.exports.getUser = (req, cb) => {
                 req.session.logged = true;
                 req.session.name = result.name;
                 req.session.email = result.email;
-                req.session.rowid = result.rowid;
+                req.session.userId = result.Id;
                 cb(true);
             } else {
                 cb(false);
@@ -26,7 +26,7 @@ module.exports.getUser = (req, cb) => {
                 req.session.logged = true;
                 req.session.name = result.name;
                 req.session.email = result.email;
-                req.session.rowid = result.rowid;
+                req.session.userId = result.Id;
                 cb(true);
             } else {
                 cb(false);
@@ -37,7 +37,7 @@ module.exports.getUser = (req, cb) => {
             req.session.logged = true;
             req.session.name = "DEBUG";
             req.session.email = "test1@test.com";
-            req.session.rowid = "4";
+            req.session.userId = "2";
         }
         if (req.session.logged || debug) {
             cb(true);

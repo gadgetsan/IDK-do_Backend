@@ -153,15 +153,19 @@ exports.searchLocations = function(pageSize, pageNum, searchTerm, callback) {
 
 exports.getSets = function(pageSize, pageNum, callback) {
     exports.init(function(db, cb) {
-        db.query("SELECT * FROM Sets LEFT JOIN Sets_Users ON Sets_Users.SetId = Sets.Id LIMIT ?,?", [(pageNum - 1) * pageSize, pageSize], (err, rows) => {
-            if (err) {
-                console.error(err.message);
+        db.query(
+            "SELECT *, Sets.Id AS Id FROM Sets LEFT JOIN Sets_Users ON Sets_Users.SetId = Sets.Id LIMIT ?,?",
+            [(pageNum - 1) * pageSize, pageSize],
+            (err, rows) => {
+                if (err) {
+                    console.error(err.message);
+                }
+                //console.dir(rows);
+                cb(() => {
+                    callback(rows);
+                });
             }
-            //console.dir(rows);
-            cb(() => {
-                callback(rows);
-            });
-        });
+        );
     });
 };
 
@@ -526,6 +530,52 @@ exports.getSortedPartsStats = function(callback) {
                 });
             }
         );
+    });
+};
+
+exports.updateSetOwnership = function(setId, quantity, userId, callback) {
+    exports.init(function(db, cb) {
+        //on commence par aller voir si l'utilisateur possèdait deja ce set
+        db.query(`SELECT * FROM Sets_Users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {
+            if (err) {
+                console.error(err.message);
+            }
+            if (rows.length == 0) {
+                //si il n'existais pas deja, on doit le crééer
+                db.query(
+                    "INSERT INTO Sets_Users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0)",
+                    [setId, userId, quantity],
+                    function(err, result) {
+                        if (err) {
+                            console.error(err.message);
+                        }
+                        cb(() => {
+                            callback(true);
+                        });
+                    }
+                );
+            } else {
+                //si il existais deja, on le mer à jour
+                db.query("UPDATE Sets_Users SET quantity=?, isOwned=1, inInventory=1 WHERE SetID=? AND UserId=?", [quantity, setId, userId], function(
+                    err,
+                    result
+                ) {
+                    if (err) {
+                        console.error(err.message);
+                    }
+                    cb(() => {
+                        callback(true);
+                    });
+                });
+            }
+        });
+    });
+};
+
+exports.updateInventoryForSet = function(setId, quantity, userId, callback) {
+    exports.init(function(db, cb) {
+        //après avoir fait la mise à jour de la quantité, on va mettre à jour l'inventaire des pièces
+        db.query(`SELECT * FROM Sets_Users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {});
     });
 };
 

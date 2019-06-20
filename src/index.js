@@ -129,6 +129,7 @@ app.post("/lego/changePartLocation", legoCtrl.changePartLocation);
 app.post("/lego/createLocation", legoCtrl.createLocation);
 app.post("/lego/updateLocationName", legoCtrl.updateLocationName);
 app.post("/lego/fetchSet", legoCtrl.fetchRebrikableSet);
+app.post("/lego/updateSetQt", legoCtrl.updateSetQuantity);
 
 app.get("/lego/cleanup", legoCtrl.cleanup);
 

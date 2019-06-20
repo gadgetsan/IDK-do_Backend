@@ -3,7 +3,7 @@ var mysql = require("mysql");
 
 exports.init = function(callback) {
     var connection = mysql.createConnection({
-        database: "IDK-do",
+        database: "heroku_56b52ebe3f3cfd2",
         host: process.env.mysql_host,
         user: process.env.mysql_user,
         password: process.env.mysql_password
