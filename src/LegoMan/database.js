@@ -3,10 +3,11 @@ var mysql = require("mysql");
 
 exports.init = function(callback) {
     var connection = mysql.createConnection({
-        database: "Lego_Management",
+        database: "heroku_56b52ebe3f3cfd2",
         host: process.env.mysql_host,
         user: process.env.mysql_user,
-        password: process.env.mysql_password
+        password: process.env.mysql_password,
+        multipleStatements: true
     });
 
     connection.connect(function(err) {
@@ -151,11 +152,11 @@ exports.searchLocations = function(pageSize, pageNum, searchTerm, callback) {
     });
 };
 
-exports.getSets = function(pageSize, pageNum, callback) {
+exports.getSets = function(pageSize, pageNum, userId, callback) {
     exports.init(function(db, cb) {
         db.query(
-            "SELECT *, Sets.Id AS Id FROM Sets LEFT JOIN Sets_Users ON Sets_Users.SetId = Sets.Id LIMIT ?,?",
-            [(pageNum - 1) * pageSize, pageSize],
+            "SELECT *, Sets.Id AS Id FROM Sets JOIN Sets_Users ON Sets_Users.SetId = Sets.Id WHERE Sets_Users.UserId = ? LIMIT ?,?",
+            [userId, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
                 if (err) {
                     console.error(err.message);
@@ -169,16 +170,17 @@ exports.getSets = function(pageSize, pageNum, callback) {
     });
 };
 
-exports.searchSets = function(pageSize, pageNum, searchTerm, callback) {
+exports.searchSets = function(pageSize, pageNum, searchTerm, userId, callback) {
     var actualSearchTerm = "%" + searchTerm + "%";
     exports.init(function(db, cb) {
         db.query(
-            `SELECT *
+            `SELECT *, Sets.Id AS Id
             FROM Sets
             LEFT JOIN Sets_Users ON Sets_Users.SetId = Sets.Id
-            WHERE Sets.Name LIKE ? OR Sets.RebrickableId LIKE ? 
+            WHERE (Sets.Name LIKE ? OR Sets.RebrickableId LIKE ? )
+            AND (Sets_Users.UserId = ? OR Sets_Users.UserId IS NULL)
             LIMIT ?,?;`,
-            [actualSearchTerm, actualSearchTerm, (pageNum - 1) * pageSize, pageSize],
+            [actualSearchTerm, actualSearchTerm, userId, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
                 if (err) {
                     console.error(err.message);
@@ -536,6 +538,7 @@ exports.getSortedPartsStats = function(callback) {
 exports.updateSetOwnership = function(setId, quantity, userId, callback) {
     exports.init(function(db, cb) {
         //on commence par aller voir si l'utilisateur possèdait deja ce set
+        //console.log("UserID: " + userId + ", quantity: " + quantity);
         db.query(`SELECT * FROM Sets_Users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {
             if (err) {
                 console.error(err.message);
@@ -543,19 +546,21 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
             if (rows.length == 0) {
                 //si il n'existais pas deja, on doit le crééer
                 db.query(
-                    "INSERT INTO Sets_Users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0)",
+                    "INSERT INTO Sets_Users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0) ",
                     [setId, userId, quantity],
                     function(err, result) {
                         if (err) {
                             console.error(err.message);
                         }
                         cb(() => {
-                            callback(true);
+                            var delta = quantity;
+                            //on va aller chercher le set en question
+                            exports.updateInventoryForSet(setId, delta, userId, callback);
                         });
                     }
                 );
             } else {
-                //si il existais deja, on le mer à jour
+                //si il existais deja, on le met à jour
                 db.query("UPDATE Sets_Users SET quantity=?, isOwned=1, inInventory=1 WHERE SetID=? AND UserId=?", [quantity, setId, userId], function(
                     err,
                     result
@@ -564,7 +569,9 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
                         console.error(err.message);
                     }
                     cb(() => {
-                        callback(true);
+                        var delta = quantity - rows[0].quantity;
+                        //on va aller chercher le set en question
+                        exports.updateInventoryForSet(setId, delta, userId, callback);
                     });
                 });
             }
@@ -572,10 +579,34 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
     });
 };
 
-exports.updateInventoryForSet = function(setId, quantity, userId, callback) {
+exports.updateInventoryForSet = function(setId, delta, userId, callback) {
     exports.init(function(db, cb) {
         //après avoir fait la mise à jour de la quantité, on va mettre à jour l'inventaire des pièces
-        db.query(`SELECT * FROM Sets_Users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {});
+        db.query(`SELECT * FROM Sets_Parts WHERE SetId = ?`, [setId], (err, rows) => {
+            var query = "";
+            var queryParams = [];
+            if (err) {
+                console.error(err.message);
+            } else {
+                for (var i = 0; i < rows.length; ++i) {
+                    query +=
+                        "INSERT INTO Parts_Locations (Quantity, UserId, RebrickableId, RebrickableColor) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE Quantity=Quantity+? ;";
+                    queryParams.push(delta, userId, rows[i].PartRebrickableId, rows[i].ColorRebrickableId, delta);
+                    //console.log("Part: " + rows[i].PartRebrickableId + ", Color: " + rows[i].ColorRebrickableId + ", Delta: " + rows[i].Quantity * delta);
+                }
+                //console.log(query);
+                //console.log(queryParams);
+
+                db.query(query, queryParams, (err, rows) => {
+                    if (err) {
+                        console.error(err.message);
+                        callback(false);
+                    } else {
+                        callback(true);
+                    }
+                });
+            }
+        });
     });
 };
 
