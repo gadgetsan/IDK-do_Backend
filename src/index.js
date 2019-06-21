@@ -19,15 +19,14 @@ app.use(
         saveUninitialized: true
     })
 );
+//pour pouvoir repondre à des requêtes à l'exterieur du domaine
+app.use("/api/*", cors());
+app.use("/lego/*", cors());
 
 //on utilise le urlencoded sur le web et le jsonencoded dans l'API
 app.use("/web/*", express.urlencoded({ extended: true }));
 app.use("/api/*", express.json({ extended: true }));
 app.use("/lego/*", express.json({ extended: true }));
-
-//pour pouvoir repondre à des requêtes à l'exterieur du domaine
-app.use("/api/*", cors());
-app.use("/lego/*", cors());
 
 //Middleware pour la gestion de l'accès et de l'utilisateur
 app.use("/web/*", function userMiddleware(req, res, next) {
