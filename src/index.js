@@ -11,6 +11,7 @@ var legoUserSession = require("./LegoMan/session");
 
 var legoSession = require("./LegoMan/legoConnect");
 var legoCtrl = require("./LegoMan/legoController");
+var db = require("./LegoMan/database");
 
 app.use(
     session({

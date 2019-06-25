@@ -1,28 +1,38 @@
 const async = require("async");
 var mysql = require("mysql");
+exports.connection = "";
 
 exports.init = function(callback) {
-    var connection = mysql.createConnection({
-        database: "heroku_56b52ebe3f3cfd2",
-        host: process.env.mysql_host,
-        user: process.env.mysql_user,
-        password: process.env.mysql_password,
-        multipleStatements: true
-    });
+    //console.log("Trying to connect from " + exports.init.caller);
+    if (exports.connection == "") {
+        exports.connection = mysql.createConnection({
+            database: "heroku_56b52ebe3f3cfd2",
+            host: process.env.mysql_host,
+            user: process.env.mysql_user,
+            password: process.env.mysql_password,
+            multipleStatements: true
+        });
 
-    connection.connect(function(err) {
-        if (err) {
-            console.error("Error connecting: " + err.stack);
-            callback(err);
-        } else {
-            //console.log("Connected as thread id: " + connection.threadId);
-            callback(connection, cb => {
-                //après tout oon ferme la DB
-                connection.end();
-                cb();
-            });
-        }
-    });
+        exports.connection.connect(function(err) {
+            if (err) {
+                console.error("Error connecting: " + err.stack);
+                callback(err);
+            } else {
+                //console.log("Connected as thread id: " + connection.threadId);
+                callback(exports.connection, cb => {
+                    //après tout oon ferme la DB
+                    //exports.connection.end();
+                    cb();
+                });
+            }
+        });
+    } else {
+        callback(exports.connection, cb => {
+            //après tout oon ferme la DB
+            //exports.connection = "";
+            cb();
+        });
+    }
 };
 
 exports.getPartsForLocation = function(locationCode, callback) {
@@ -445,23 +455,21 @@ exports.createSetPartIfNotExist = function(partId, partColor, setId, quantity, c
                 callback(err);
             } else {
                 if (rows.length == 0) {
-                    exports.init(function(db, cb) {
-                        db.query(
-                            "INSERT INTO Sets_Parts (ColorRebrickableId, PartRebrickableId, Quantity, SetId) VALUES (?, ?, ?, ?)",
-                            [partColor, partId, quantity, setId],
-                            (err, row) => {
-                                //console.dir(rows);
-                                if (err) {
-                                    console.error("Error connecting: " + err.stack);
-                                    callback(err);
-                                } else {
-                                    cb(() => {
-                                        callback(row.insertId);
-                                    });
-                                }
+                    db.query(
+                        "INSERT INTO Sets_Parts (ColorRebrickableId, PartRebrickableId, Quantity, SetId) VALUES (?, ?, ?, ?)",
+                        [partColor, partId, quantity, setId],
+                        (err, row) => {
+                            //console.dir(rows);
+                            if (err) {
+                                console.error("Error connecting: " + err.stack);
+                                callback(err);
+                            } else {
+                                cb(() => {
+                                    callback(row.insertId);
+                                });
                             }
-                        );
-                    });
+                        }
+                    );
                 } else {
                     cb(() => {
                         //console.dir(rows);
