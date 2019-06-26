@@ -1,10 +1,27 @@
 const async = require("async");
 var mysql = require("mysql");
+
 exports.connection = "";
+exports.connectionCount = 0;
+
+exports.releaseConnection = function(callback) {
+    //après tout oon ferme la DB
+    //console.log("connection Closing, Count: " + exports.connectionCount);
+    exports.connectionCount--;
+    if (exports.connectionCount == 0) {
+        exports.connection.end();
+        exports.connection = "";
+        //console.log("Closing master Connection <=====");
+    }
+
+    callback();
+};
 
 exports.init = function(callback) {
     //console.log("Trying to connect from " + exports.init.caller);
-    if (exports.connection == "") {
+    exports.connectionCount++;
+    //console.log("connection Open, Count: " + exports.connectionCount);
+    if (exports.connectionCount == 1) {
         exports.connection = mysql.createConnection({
             database: "heroku_56b52ebe3f3cfd2",
             host: process.env.mysql_host,
@@ -12,26 +29,18 @@ exports.init = function(callback) {
             password: process.env.mysql_password,
             multipleStatements: true
         });
-
+        //console.log("Opening master Connection =====>");
         exports.connection.connect(function(err) {
             if (err) {
                 console.error("Error connecting: " + err.stack);
                 callback(err);
             } else {
                 //console.log("Connected as thread id: " + connection.threadId);
-                callback(exports.connection, cb => {
-                    //après tout oon ferme la DB
-                    //exports.connection.end();
-                    cb();
-                });
+                callback(exports.connection, exports.releaseConnection);
             }
         });
     } else {
-        callback(exports.connection, cb => {
-            //après tout oon ferme la DB
-            //exports.connection = "";
-            cb();
-        });
+        callback(exports.connection, exports.releaseConnection);
     }
 };
 
@@ -560,10 +569,12 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
                         if (err) {
                             console.error(err.message);
                         }
-                        cb(() => {
-                            var delta = quantity;
-                            //on va aller chercher le set en question
-                            exports.updateInventoryForSet(setId, delta, userId, callback);
+                        var delta = quantity;
+                        //on va aller chercher le set en question
+                        exports.updateInventoryForSet(setId, delta, userId, function(result) {
+                            cb(function() {
+                                callback(result);
+                            });
                         });
                     }
                 );
@@ -576,10 +587,12 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
                     if (err) {
                         console.error(err.message);
                     }
-                    cb(() => {
-                        var delta = quantity - rows[0].quantity;
-                        //on va aller chercher le set en question
-                        exports.updateInventoryForSet(setId, delta, userId, callback);
+                    var delta = quantity - rows[0].quantity;
+                    //on va aller chercher le set en question
+                    exports.updateInventoryForSet(setId, delta, userId, function(result) {
+                        cb(function() {
+                            callback(result);
+                        });
                     });
                 });
             }
@@ -595,6 +608,9 @@ exports.updateInventoryForSet = function(setId, delta, userId, callback) {
             var queryParams = [];
             if (err) {
                 console.error(err.message);
+                cb(function() {
+                    callback(false);
+                });
             } else {
                 for (var i = 0; i < rows.length; ++i) {
                     query +=
@@ -608,9 +624,13 @@ exports.updateInventoryForSet = function(setId, delta, userId, callback) {
                 db.query(query, queryParams, (err, rows) => {
                     if (err) {
                         console.error(err.message);
-                        callback(false);
+                        cb(function() {
+                            callback(false);
+                        });
                     } else {
-                        callback(true);
+                        cb(function() {
+                            callback(true);
+                        });
                     }
                 });
             }

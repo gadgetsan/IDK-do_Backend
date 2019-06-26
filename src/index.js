@@ -61,7 +61,7 @@ app.use("/lego/*", function userMiddleware(req, res, next) {
     //console.log(req.baseUrl);
     //a ajouter quand on va avoir fait le login
     legoUserSession.getUser(req, result => {
-        console.dir(result);
+        //console.dir(result);
         if (
             !result &&
             req.baseUrl != "/api/register" &&
@@ -71,6 +71,7 @@ app.use("/lego/*", function userMiddleware(req, res, next) {
         ) {
             res.sendStatus(401);
         } else {
+            //console.log("REQUEST START ====");
             next();
         }
     });

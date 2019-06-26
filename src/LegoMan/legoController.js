@@ -34,7 +34,7 @@ module.exports = {
     },
 
     getSets: function(req, res) {
-        console.dir("search: " + req.query.searchTerm);
+        //console.dir("search: " + req.query.searchTerm);
         if (req.query.searchTerm == undefined || req.query.searchTerm == "") {
             db.getSets(20, req.query.currentPage, req.session.userId, function(result) {
                 res.send(result);
@@ -111,7 +111,7 @@ module.exports = {
         });
     },
     updateSetQuantity: function(req, res) {
-        console.dir("setID: " + req.body.setId + ", qt: " + req.body.quantity + " , userId: " + req.session.userId);
+        //console.dir("setID: " + req.body.setId + ", qt: " + req.body.quantity + " , userId: " + req.session.userId);
 
         db.updateSetOwnership(req.body.setId, req.body.quantity, req.session.userId, function(result) {
             res.send(result);
