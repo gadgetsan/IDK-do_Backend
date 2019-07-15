@@ -90,6 +90,7 @@ module.exports = {
 
     fetchRebrikableData: function(req, res) {
         helpers.getPartInformation(req.query.rebrickableId, function(result) {
+            //console.log(result);
             res.send(result);
         });
     },
