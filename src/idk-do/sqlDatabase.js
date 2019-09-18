@@ -3,7 +3,7 @@ var mysql = require("mysql");
 
 exports.init = function(callback) {
     var connection = mysql.createConnection({
-        database: "heroku_56b52ebe3f3cfd2",
+        database: process.env.mysql_database,
         host: process.env.mysql_host,
         user: process.env.mysql_user,
         password: process.env.mysql_password
@@ -26,7 +26,7 @@ exports.init = function(callback) {
 
 exports.validateUser = function(mail, password, callback) {
     exports.init(function(db, cb) {
-        db.query("SELECT * FROM User WHERE email=? AND valid=1;", [mail], (err, row) => {
+        db.query("SELECT * FROM user WHERE email=? AND valid=1;", [mail], (err, row) => {
             if (err) {
                 console.error(err.message);
                 cb(() => {
@@ -61,7 +61,7 @@ exports.validateUser = function(mail, password, callback) {
 
 exports.validateEmail = function(mail, callback) {
     exports.init(function(db, cb) {
-        db.query("SELECT * FROM User WHERE email=? AND Valid=1;", mail, (err, row) => {
+        db.query("SELECT * FROM user WHERE email=? AND Valid=1;", mail, (err, row) => {
             if (row) {
                 //on a trouvé l'usilitateur, on envoie le id
                 //console.log(JSON.stringify(row));
@@ -81,7 +81,7 @@ exports.validateAccount = function(key, cb) {
     }
     exports.init(function(db, cb2) {
         //console.log("key: " + key);
-        db.query("SELECT * FROM MailKey WHERE keyID=?;", key, (err, row) => {
+        db.query("SELECT * FROM mailkey WHERE keyID=?;", key, (err, row) => {
             if (err) {
                 console.error(err.message);
                 cb2(() => {
@@ -90,7 +90,7 @@ exports.validateAccount = function(key, cb) {
             } else if (row) {
                 var user = row[0].user;
                 //on a le rownum de l'utilisateur en question, on va aller changer la valeur de 'valid'
-                db.query("UPDATE User SET valid = ? WHERE rowid = ?", [1, user], function(err) {
+                db.query("UPDATE user SET valid = ? WHERE rowid = ?", [1, user], function(err) {
                     if (err) {
                         console.error(err.message);
                     }
@@ -113,7 +113,7 @@ exports.validateAccount = function(key, cb) {
 exports.validateKey = function(key, cb) {
     exports.init(function(db, cb2) {
         //console.log("key: " + key);
-        db.query("SELECT * FROM MailKey WHERE keyID=?;", key, (err, row) => {
+        db.query("SELECT * FROM mailkey WHERE keyID=?;", key, (err, row) => {
             if (err) {
                 console.error(err.message);
                 cb2(() => {
@@ -138,7 +138,7 @@ exports.createUser = function(email, password, name, callback) {
         //on hash le password avant de l'enregistrer dans la bd
         var bcrypt = require("bcrypt");
         bcrypt.hash(password, 10, function(err, hash) {
-            db.query("INSERT INTO User(name, PwHash, email, valid) VALUES(?, ?, ?, 0)", [name, hash, email], function(err, result) {
+            db.query("INSERT INTO user(name, PwHash, email, valid) VALUES(?, ?, ?, 0)", [name, hash, email], function(err, result) {
                 if (err) {
                     console.error(err.message);
                     cb(() => {
@@ -159,7 +159,7 @@ exports.createActionKey = function(action, userId, cb) {
     const uuidv1 = require("uuid/v1");
     var key = uuidv1();
     exports.init(function(db, cb2) {
-        db.query("INSERT INTO MailKey(keyID, type, user) VALUES(?, ?, ?)", [key, action, userId], function(err) {
+        db.query("INSERT INTO mailkey(keyID, type, user) VALUES(?, ?, ?)", [key, action, userId], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -170,9 +170,9 @@ exports.createActionKey = function(action, userId, cb) {
     });
 };
 
-exports.addItem = function(name, description, link, userId, cb) {
+exports.additem = function(name, description, link, userId, cb) {
     exports.init(function(db, cb2) {
-        db.query("INSERT INTO Item(name, description, link, user) VALUES(?, ?, ?, ?)", [name, description, link, userId], function(err, result) {
+        db.query("INSERT INTO item(name, description, link, user) VALUES(?, ?, ?, ?)", [name, description, link, userId], function(err, result) {
             if (err) {
                 console.error(err.message);
             }
@@ -184,9 +184,9 @@ exports.addItem = function(name, description, link, userId, cb) {
     });
 };
 
-exports.editItem = function(name, description, link, userId, itemId, cb) {
+exports.edititem = function(name, description, link, userId, itemId, cb) {
     exports.init(function(db, cb2) {
-        db.query("UPDATE Item SET name=?, description=?, link=? WHERE rowid=?", [name, description, link, itemId], function(err, result) {
+        db.query("UPDATE item SET name=?, description=?, link=? WHERE rowid=?", [name, description, link, itemId], function(err, result) {
             cb2(err => {
                 cb(err);
             });
@@ -196,7 +196,7 @@ exports.editItem = function(name, description, link, userId, itemId, cb) {
 
 exports.removeItem = function(itemid, userid, cb) {
     exports.init(function(db, cb2) {
-        db.query("DELETE FROM Item WHERE rowid = ?", [itemid], function(err) {
+        db.query("DELETE FROM item WHERE rowid = ?", [itemid], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -209,7 +209,7 @@ exports.removeItem = function(itemid, userid, cb) {
 
 exports.markAsBought = function(itemid, date, userid, owner, cb) {
     exports.init(function(db, cb2) {
-        db.query("UPDATE Item SET boughtOn = ?, boughtUser = ? WHERE rowid = ?", [date, userid, itemid], function(err) {
+        db.query("UPDATE item SET boughtOn = ?, boughtUser = ? WHERE rowid = ?", [date, userid, itemid], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -222,7 +222,7 @@ exports.markAsBought = function(itemid, date, userid, owner, cb) {
 
 exports.cancelBought = function(itemid, userid, owner, cb) {
     exports.init(function(db, cb2) {
-        db.query("UPDATE Item SET boughtOn = NULL, boughtUser = NULL WHERE rowid = ? AND boughtUser = ?", [itemid, userid], function(err) {
+        db.query("UPDATE item SET boughtOn = NULL, boughtUser = NULL WHERE rowid = ? AND boughtUser = ?", [itemid, userid], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -235,7 +235,7 @@ exports.cancelBought = function(itemid, userid, owner, cb) {
 
 exports.removeShare = function(itemid, userid, cb) {
     exports.init(function(db, cb2) {
-        db.query("DELETE FROM Share WHERE rowid = ?", [itemid], function(err) {
+        db.query("DELETE FROM share WHERE rowid = ?", [itemid], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -248,7 +248,7 @@ exports.removeShare = function(itemid, userid, cb) {
 
 exports.getShares = function(userId, cb) {
     exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM Share Where user = ?";
+        var sql = "SELECT * FROM share Where user = ?";
         var rowList = [];
         db.query(sql, [userId], (err, result) => {
             if (err) {
@@ -268,8 +268,8 @@ exports.getShares = function(userId, cb) {
 exports.getSharedToMe = function(myEmail, cb) {
     exports.init(function(db, cb2) {
         //pour debug
-        var sql = "SELECT name, email, User.rowid FROM Share JOIN User ON User.rowid = Share.user WHERE toEmail = ? OR toEmail = 'test1@test.com'";
-        //var sql = "SELECT name, email, User.rowid FROM Share JOIN User ON User.rowid = Share.user WHERE toEmail = ? COLLATE NOCASE";
+        var sql = "SELECT name, email, user.rowid FROM share JOIN user ON user.rowid = share.user WHERE toEmail = ? OR toEmail = 'test1@test.com'";
+        //var sql = "SELECT name, email, user.rowid FROM share JOIN user ON user.rowid = share.user WHERE toEmail = ? COLLATE NOCASE";
         var rowList = [];
         db.query(sql, [myEmail], (err, result) => {
             if (err) {
@@ -288,7 +288,7 @@ exports.getSharedToMe = function(myEmail, cb) {
 
 exports.getItemList = function(userId, cb) {
     exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM Item Where User = ?";
+        var sql = "SELECT * FROM item Where user = ?";
         var rowList = [];
         db.query(sql, [userId], (err, result, fields) => {
             if (err) {
@@ -307,7 +307,7 @@ exports.getItemList = function(userId, cb) {
 
 exports.getSharedList = function(userId, cb) {
     exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM Item Where User = ?";
+        var sql = "SELECT * FROM item Where User = ?";
         var rowList = [];
         db.query(sql, [userId], (err, result) => {
             if (err) {
@@ -326,7 +326,7 @@ exports.getSharedList = function(userId, cb) {
 
 exports.getUser = function(userId, cb) {
     exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM User Where rowid = ?";
+        var sql = "SELECT * FROM user Where rowid = ?";
         db.query(sql, [userId], (err, result) => {
             if (err) {
                 console.error(err.message);
@@ -340,7 +340,7 @@ exports.getUser = function(userId, cb) {
 
 exports.share = function(email, userId, cb) {
     exports.init(function(db, cb2) {
-        db.query("INSERT INTO Share(toEmail, user) VALUES(?, ?)", [email, userId], function(err, result) {
+        db.query("INSERT INTO share(toEmail, user) VALUES(?, ?)", [email, userId], function(err, result) {
             if (err) {
                 console.error(err.message);
             }
@@ -356,7 +356,7 @@ exports.updatePassword = function(password, userId, cb) {
     exports.init(function(db, cb2) {
         var bcrypt = require("bcrypt");
         bcrypt.hash(password, 10, function(err, hash) {
-            db.query("UPDATE User SET PwHash = ? WHERE rowid = ?", [hash, userId], function(err) {
+            db.query("UPDATE user SET PwHash = ? WHERE rowid = ?", [hash, userId], function(err) {
                 cb2(cb);
             });
         });
@@ -365,7 +365,7 @@ exports.updatePassword = function(password, userId, cb) {
 
 exports.addSecretMessage = function(ideaId, text, userId, cb) {
     exports.init(function(db, cb2) {
-        db.query("INSERT INTO ItemMessage(item, text, user) VALUES(?, ?, ?)", [ideaId, text, userId], function(err, result) {
+        db.query("INSERT INTO itemmessage(item, text, user) VALUES(?, ?, ?)", [ideaId, text, userId], function(err, result) {
             if (err) {
                 console.error(err.message);
             }
@@ -379,7 +379,7 @@ exports.addSecretMessage = function(ideaId, text, userId, cb) {
 
 exports.getSecretMessages = function(itemId, cb) {
     exports.init(function(db, cb2) {
-        var sql = "SELECT * FROM ItemMessage Where item = ?";
+        var sql = "SELECT * FROM itemmessage Where item = ?";
         var rowList = [];
         db.query(sql, [itemId], (err, result, fields) => {
             if (err) {

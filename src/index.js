@@ -13,6 +13,8 @@ var legoSession = require("./LegoMan/legoConnect");
 var legoCtrl = require("./LegoMan/legoController");
 var db = require("./LegoMan/database");
 
+var extCtrl = require("./External/externalController");
+
 app.use(
     session({
         secret: process.env.session_secret,
@@ -136,5 +138,8 @@ app.get("/lego/cleanup", legoCtrl.cleanup);
 
 app.post("/lego/register", legoSession.apiRegister);
 app.post("/lego/login", legoSession.apiLogin);
+
+//external api (for database backup)
+app.get("/ext/bckp", extCtrl.getBackup);
 
 app.listen(process.env.PORT || 5000);

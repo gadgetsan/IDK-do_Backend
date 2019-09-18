@@ -5,7 +5,7 @@ exports.connection = "";
 exports.connectionCount = 0;
 
 var pool = mysql.createPool({
-    database: "heroku_56b52ebe3f3cfd2",
+    database: process.env.mysql_database,
     host: process.env.mysql_host,
     user: process.env.mysql_user,
     password: process.env.mysql_password,
@@ -64,7 +64,7 @@ exports.init = function(callback) {
 
 exports.getPartsForLocation = function(locationCode, callback) {
     exports.init(function(db) {
-        db.query("SELECT RebrickableId FROM Parts_Locations WHERE LocationCode =? GROUP BY RebrickableId;", [locationCode], (err, row) => {
+        db.query("SELECT RebrickableId FROM parts_locations WHERE LocationCode =? GROUP BY RebrickableId;", [locationCode], (err, row) => {
             //console.dir(row);
             callback(row);
         });
@@ -74,9 +74,9 @@ exports.getPartsForLocation = function(locationCode, callback) {
 exports.createLocation = function(locationName, locationCode, type, callback) {
     //console.log("LocationName: " + locationName + " LocationCode: " + locationCode, " type: " + type);
     exports.init(function(db) {
-        db.query("SELECT * FROM Locations WHERE LocationCode = ?;", [locationCode], (err, rows) => {
+        db.query("SELECT * FROM locations WHERE LocationCode = ?;", [locationCode], (err, rows) => {
             if (rows.length == 0) {
-                db.query("INSERT INTO Locations (LocationCode, Name, Type) VALUES (?,?, ?)", [locationCode, locationName, type], (err, row) => {
+                db.query("INSERT INTO locations (LocationCode, Name, Type) VALUES (?,?, ?)", [locationCode, locationName, type], (err, row) => {
                     //console.dir(rows);
                     if (err) {
                         console.error("Error: " + err.stack);
@@ -95,12 +95,12 @@ exports.createLocation = function(locationName, locationCode, type, callback) {
 exports.getParts = function(pageSize, pageNum, callback) {
     exports.init(function(db) {
         db.query(
-            `SELECT Parts.Id, Parts_Locations.RebrickableId, Parts.Name, SUM(Quantity) AS TotalQuantity, Parts_Locations.LocationCode, Locations.Name AS LocationName 
-            FROM Parts_Locations 
-            LEFT JOIN Locations ON Locations.LocationCode = Parts_Locations.LocationCode 
-            LEFT JOIN Parts ON Parts_Locations.RebrickableId = Parts.RebrickableId 
-            WHERE Parts_Locations.LocationCode IS NULL
-            GROUP BY Parts.Id, Parts_Locations.RebrickableId, Parts_Locations.LocationCode, Locations.Name, Parts.Name
+            `SELECT parts.Id, parts_locations.RebrickableId, parts.Name, SUM(Quantity) AS TotalQuantity, parts_locations.LocationCode, locations.Name AS LocationName 
+            FROM parts_locations 
+            LEFT JOIN locations ON locations.LocationCode = parts_locations.LocationCode 
+            LEFT JOIN parts ON parts_locations.RebrickableId = parts.RebrickableId 
+            WHERE parts_locations.LocationCode IS NULL
+            GROUP BY parts.Id, parts_locations.RebrickableId, parts_locations.LocationCode, locations.Name, parts.Name
             ORDER BY TotalQuantity DESC 
             LIMIT ?,?;`,
             [(pageNum - 1) * pageSize, pageSize],
@@ -120,12 +120,12 @@ exports.searchParts = function(pageSize, pageNum, searchTerm, callback) {
     //console.log(actualSearchTerm);
     exports.init(function(db) {
         db.query(
-            `SELECT Parts.Id, Parts_Locations.RebrickableId, Parts.Name, SUM(Quantity) AS TotalQuantity, Parts_Locations.LocationCode, Locations.Name AS LocationName 
-            FROM Parts_Locations 
-            LEFT JOIN Locations ON Locations.LocationCode = Parts_Locations.LocationCode 
-            LEFT JOIN Parts ON Parts_Locations.RebrickableId = Parts.RebrickableId 
-            WHERE Parts_Locations.RebrickableId LIKE ?
-            GROUP BY Parts.Id, Parts_Locations.RebrickableId, Parts.Name, Parts_Locations.LocationCode, Locations.Name
+            `SELECT parts.Id, parts_locations.RebrickableId, parts.Name, SUM(Quantity) AS TotalQuantity, parts_locations.LocationCode, locations.Name AS LocationName 
+            FROM parts_locations 
+            LEFT JOIN locations ON locations.LocationCode = parts_locations.LocationCode 
+            LEFT JOIN parts ON parts_locations.RebrickableId = parts.RebrickableId 
+            WHERE parts_locations.RebrickableId LIKE ?
+            GROUP BY parts.Id, parts_locations.RebrickableId, parts.Name, parts_locations.LocationCode, locations.Name
             ORDER BY TotalQuantity DESC LIMIT ?,?;`,
             [actualSearchTerm, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
@@ -141,7 +141,7 @@ exports.searchParts = function(pageSize, pageNum, searchTerm, callback) {
 
 exports.getLocations = function(callback) {
     exports.init(function(db) {
-        db.query("SELECT * FROM Locations", [], (err, rows) => {
+        db.query("SELECT * FROM locations", [], (err, rows) => {
             if (err) {
                 console.error(err.message);
             }
@@ -155,11 +155,11 @@ exports.searchLocations = function(pageSize, pageNum, searchTerm, callback) {
     var actualSearchTerm = "%" + searchTerm + "%";
     exports.init(function(db) {
         db.query(
-            `SELECT Locations.Name, Sum(Parts_Locations.Quantity) AS TotalQuantity, Locations.LocationCode 
-            FROM Locations 
-            LEFT JOIN Parts_Locations ON Parts_Locations.LocationCode = Locations.LocationCode 
-            WHERE Locations.Name LIKE ? OR Locations.LocationCode LIKE ? 
-            GROUP BY Locations.Name, Locations.LocationCode 
+            `SELECT locations.Name, Sum(parts_locations.Quantity) AS TotalQuantity, locations.LocationCode 
+            FROM locations 
+            LEFT JOIN parts_locations ON parts_locations.LocationCode = locations.LocationCode 
+            WHERE locations.Name LIKE ? OR locations.LocationCode LIKE ? 
+            GROUP BY locations.Name, locations.LocationCode 
             ORDER BY TotalQuantity DESC LIMIT ?,?;`,
             [actualSearchTerm, actualSearchTerm, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
@@ -176,7 +176,7 @@ exports.searchLocations = function(pageSize, pageNum, searchTerm, callback) {
 exports.getSets = function(pageSize, pageNum, userId, callback) {
     exports.init(function(db) {
         db.query(
-            "SELECT *, Sets.Id AS Id FROM Sets JOIN Sets_Users ON Sets_Users.SetId = Sets.Id WHERE Sets_Users.UserId = ? LIMIT ?,?",
+            "SELECT *, sets.Id AS Id FROM sets JOIN sets_users ON sets_users.SetId = sets.Id WHERE sets_users.UserId = ? LIMIT ?,?",
             [userId, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
                 if (err) {
@@ -193,11 +193,11 @@ exports.searchSets = function(pageSize, pageNum, searchTerm, userId, callback) {
     var actualSearchTerm = "%" + searchTerm + "%";
     exports.init(function(db) {
         db.query(
-            `SELECT *, Sets.Id AS Id
-            FROM Sets
-            LEFT JOIN Sets_Users ON Sets_Users.SetId = Sets.Id
-            WHERE (Sets.Name LIKE ? OR Sets.RebrickableId LIKE ? )
-            AND (Sets_Users.UserId = ? OR Sets_Users.UserId IS NULL)
+            `SELECT *, sets.Id AS Id
+            FROM sets
+            LEFT JOIN sets_users ON sets_users.SetId = sets.Id
+            WHERE (sets.Name LIKE ? OR sets.RebrickableId LIKE ? )
+            AND (sets_users.UserId = ? OR sets_users.UserId IS NULL)
             LIMIT ?,?;`,
             [actualSearchTerm, actualSearchTerm, userId, (pageNum - 1) * pageSize, pageSize],
             (err, rows) => {
@@ -213,7 +213,7 @@ exports.searchSets = function(pageSize, pageNum, searchTerm, userId, callback) {
 
 exports.changePartLocation = function(locationCode, rebrickableId, callback) {
     exports.init(function(db) {
-        db.query("UPDATE Parts_Locations SET LocationCode=? WHERE RebrickableId=?", [locationCode, rebrickableId], (err, rows) => {
+        db.query("UPDATE parts_locations SET LocationCode=? WHERE RebrickableId=?", [locationCode, rebrickableId], (err, rows) => {
             //console.dir(rows);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -227,7 +227,7 @@ exports.changePartLocation = function(locationCode, rebrickableId, callback) {
 
 exports.updateLocationName = function(code, newName, callback) {
     exports.init(function(db) {
-        db.query("UPDATE Locations SET Name=? WHERE LocationCode=?", [newName, code], (err, rows) => {
+        db.query("UPDATE locations SET Name=? WHERE LocationCode=?", [newName, code], (err, rows) => {
             //console.dir(rows);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -241,7 +241,7 @@ exports.updateLocationName = function(code, newName, callback) {
 
 exports.getPartData = function(rebrickableId, callback) {
     exports.init(function(db) {
-        db.query("SELECT * FROM Parts WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
+        db.query("SELECT * FROM parts WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
             //console.dir(row);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -257,25 +257,25 @@ exports.getSetData = function(rebrickableId, callback) {
     exports.init(function(db) {
         db.query(
             `SELECT 
-                Sets_Parts.Id AS Id, 
-                Sets.RebrickableId AS SetID, 
-                Sets.Name, Sets.Year, 
-                Parts.Name, Parts.RebrickableImageUrl, 
-                Sets_Parts.PartRebrickableId as RebrickableId, 
-                Sets_Parts.quantity AS Quantity, 
-                Sets_Parts.ColorRebrickableId AS RebrickableColor, 
-                Colors.Hex, 
-                Colors.Name AS ColorName, 
-                Locations.LocationCode,
-                Locations.Name AS LocationName
-            FROM Sets_Parts 
-            LEFT JOIN Sets ON Sets.Id = Sets_Parts.SetId 
-            LEFT JOIN Colors ON Colors.RebrickableId = Sets_Parts.ColorRebrickableId 
-            LEFT JOIN Parts ON Sets_Parts.PartRebrickableId = Parts.RebrickableId 
-            LEFT JOIN Parts_Locations ON Parts_Locations.RebrickableId = Sets_Parts.PartRebrickableId AND Parts_Locations.RebrickableColor = Sets_Parts.ColorRebrickableId 
-            LEFT JOIN Locations ON Locations.LocationCode = Parts_Locations.LocationCode 
-            WHERE Sets.RebrickableId  =?
-            ORDER BY Locations.LocationCode IS NOT NULL, Sets_Parts.ColorRebrickableId`,
+                sets_parts.Id AS Id, 
+                sets.RebrickableId AS SetID, 
+                sets.Name, sets.Year, 
+                parts.Name, parts.RebrickableImageUrl, 
+                sets_parts.PartRebrickableId as RebrickableId, 
+                sets_parts.quantity AS Quantity, 
+                sets_parts.ColorRebrickableId AS RebrickableColor, 
+                colors.Hex, 
+                colors.Name AS ColorName, 
+                locations.LocationCode,
+                locations.Name AS LocationName
+            FROM sets_parts 
+            LEFT JOIN sets ON sets.Id = sets_parts.SetId 
+            LEFT JOIN colors ON colors.RebrickableId = sets_parts.ColorRebrickableId 
+            LEFT JOIN parts ON sets_parts.PartRebrickableId = parts.RebrickableId 
+            LEFT JOIN parts_locations ON parts_locations.RebrickableId = sets_parts.PartRebrickableId AND parts_locations.RebrickableColor = sets_parts.ColorRebrickableId 
+            LEFT JOIN locations ON locations.LocationCode = parts_locations.LocationCode 
+            WHERE sets.RebrickableId  =?
+            ORDER BY locations.LocationCode IS NOT NULL, sets_parts.ColorRebrickableId`,
             [rebrickableId],
             (err, rows) => {
                 //console.dir(row);
@@ -291,7 +291,7 @@ exports.getSetData = function(rebrickableId, callback) {
 };
 exports.eleminatePartDuplicates = function(callback) {
     exports.init(function(db) {
-        db.query(`SELECT RebrickableId, count(*) as count, MAX(Id) AS IdToKeep FROM Parts GROUP BY RebrickableId HAVING count >= 2;`, [], (err, rows) => {
+        db.query(`SELECT RebrickableId, count(*) as count, MAX(Id) AS IdToKeep FROM parts GROUP BY RebrickableId HAVING count >= 2;`, [], (err, rows) => {
             //console.dir(row);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -306,7 +306,7 @@ exports.eleminatePartDuplicates = function(callback) {
                 }
                 //console.log("rebrickableToRemove: " + rebrickableToRemove.join(","));
                 //console.log("idToKeep: " + idToKeep.join(","));
-                db.query(`DELETE FROM Parts WHERE RebrickableId IN (?) AND Id NOT IN (?);`, [rebrickableToRemove, idToKeep], (err, rows) => {
+                db.query(`DELETE FROM parts WHERE RebrickableId IN (?) AND Id NOT IN (?);`, [rebrickableToRemove, idToKeep], (err, rows) => {
                     //console.dir(rows);
                     if (err) {
                         console.error("Error connecting: " + err.stack);
@@ -322,7 +322,7 @@ exports.eleminatePartDuplicates = function(callback) {
 
 exports.getColorData = function(rebrickableId, callback) {
     exports.init(function(db) {
-        db.query("SELECT * FROM Colors WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
+        db.query("SELECT * FROM colors WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
             //console.dir(row);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -337,12 +337,12 @@ exports.getColorData = function(rebrickableId, callback) {
 exports.getLocationData = function(locationCode, callback) {
     exports.init(function(db) {
         db.query(
-            `SELECT Parts_Locations.RebrickableId, Locations.Name, Locations.LocationCode, SUM(Quantity) AS TotalQuantity, Parts.Name, Parts.RebrickableImageUrl
-            FROM Parts_Locations 
-            LEFT JOIN Locations ON Locations.LocationCode = Parts_Locations.LocationCode 
-            LEFT JOIN Parts ON Parts_Locations.RebrickableId = Parts.RebrickableId 
-            WHERE Parts_Locations.LocationCode =? 
-            GROUP BY Parts_Locations.RebrickableId, Locations.Name, Locations.LocationCode, Parts.Name, Parts.RebrickableImageUrl
+            `SELECT parts_locations.RebrickableId, locations.Name, locations.LocationCode, SUM(Quantity) AS TotalQuantity, parts.Name, parts.RebrickableImageUrl
+            FROM parts_locations 
+            LEFT JOIN locations ON locations.LocationCode = parts_locations.LocationCode 
+            LEFT JOIN parts ON parts_locations.RebrickableId = parts.RebrickableId 
+            WHERE parts_locations.LocationCode =? 
+            GROUP BY parts_locations.RebrickableId, locations.Name, locations.LocationCode, parts.Name, parts.RebrickableImageUrl
             ORDER BY SUM(Quantity) DESC;`,
             [locationCode],
             (err, rows) => {
@@ -362,7 +362,7 @@ exports.createPartData = function(rebrickableId, name, json, callback) {
     var parsedJSON = JSON.parse(json);
     exports.init(function(db) {
         db.query(
-            "INSERT INTO Parts (RebrickableId, Name, RebrickableJSON, RebrickableImageUrl) VALUES (?, ?, ?, ?)",
+            "INSERT INTO parts (RebrickableId, Name, RebrickableJSON, RebrickableImageUrl) VALUES (?, ?, ?, ?)",
             [rebrickableId, name, json, parsedJSON.part_img_url],
             (err, row) => {
                 //console.dir(rows);
@@ -381,7 +381,7 @@ exports.createColorData = function(rebrickableId, name, json, callback) {
     var parsedJSON = JSON.parse(json);
     exports.init(function(db) {
         db.query(
-            "INSERT INTO Colors (RebrickableId, Name, Hex, Transparent, RebrickableJSON) VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO colors (RebrickableId, Name, Hex, Transparent, RebrickableJSON) VALUES (?, ?, ?, ?, ?)",
             [rebrickableId, name, parsedJSON.rgb, parsedJSON.is_trans, json],
             (err, row) => {
                 //console.dir(rows);
@@ -400,7 +400,7 @@ exports.createSetDataIfNotExist = function(rebrickableId, name, json, callback) 
     var parsedJSON = JSON.parse(json);
 
     exports.init(function(db) {
-        db.query("SELECT * FROM Sets WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
+        db.query("SELECT * FROM sets WHERE RebrickableId =? ;", [rebrickableId], (err, rows) => {
             //console.dir(row);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -409,7 +409,7 @@ exports.createSetDataIfNotExist = function(rebrickableId, name, json, callback) 
                 if (rows.length == 0) {
                     exports.init(function(db) {
                         db.query(
-                            "INSERT INTO Sets (RebrickableId, Name, RebrickableJSON, Year) VALUES (?, ?, ?, ?)",
+                            "INSERT INTO sets (RebrickableId, Name, RebrickableJSON, Year) VALUES (?, ?, ?, ?)",
                             [rebrickableId, name, json, parsedJSON.year],
                             (err, row) => {
                                 //console.dir(rows);
@@ -433,7 +433,7 @@ exports.createSetDataIfNotExist = function(rebrickableId, name, json, callback) 
 
 exports.createSetPartIfNotExist = function(partId, partColor, setId, quantity, callback) {
     exports.init(function(db) {
-        db.query("SELECT * FROM Sets_Parts WHERE PartRebrickableId =? AND ColorRebrickableId = ? AND SetId = ? ;", [partId, partColor, setId], (err, rows) => {
+        db.query("SELECT * FROM sets_parts WHERE PartRebrickableId =? AND ColorRebrickableId = ? AND SetId = ? ;", [partId, partColor, setId], (err, rows) => {
             //console.dir(row);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -441,7 +441,7 @@ exports.createSetPartIfNotExist = function(partId, partColor, setId, quantity, c
             } else {
                 if (rows.length == 0) {
                     db.query(
-                        "INSERT INTO Sets_Parts (ColorRebrickableId, PartRebrickableId, Quantity, SetId) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO sets_parts (ColorRebrickableId, PartRebrickableId, Quantity, SetId) VALUES (?, ?, ?, ?)",
                         [partColor, partId, quantity, setId],
                         (err, row) => {
                             //console.dir(rows);
@@ -466,7 +466,7 @@ exports.createSetPartIfNotExist = function(partId, partColor, setId, quantity, c
 exports.updatePartData = function(oldData, callback) {
     var rebrickableImgUrl = JSON.parse(oldData.RebrickableJSON).part_img_url;
     exports.init(function(db) {
-        db.query("UPDATE Parts SET RebrickableImageUrl=? WHERE Id=?", [rebrickableImgUrl, oldData.Id], (err, rows) => {
+        db.query("UPDATE parts SET RebrickableImageUrl=? WHERE Id=?", [rebrickableImgUrl, oldData.Id], (err, rows) => {
             //console.dir(rows);
             if (err) {
                 console.error("Error connecting: " + err.stack);
@@ -483,11 +483,11 @@ exports.updatePartData = function(oldData, callback) {
 exports.getPartColors = function(rebrickablePartId, callback) {
     exports.init(function(db) {
         db.query(
-            `SELECT Parts_Locations.RebrickableColor, Colors.Name AS ColorName, Colors.Hex, Colors.Transparent, Sum(Quantity) AS Quantity
-            FROM Parts_Locations
-            LEFT JOIN Colors ON Colors.RebrickableId = Parts_Locations.RebrickableColor
-            WHERE Parts_Locations.RebrickableId LIKE ?
-            GROUP BY Parts_Locations.RebrickableColor, Colors.Name, Colors.Hex, Colors.Transparent
+            `SELECT parts_locations.RebrickableColor, colors.Name AS ColorName, colors.Hex, colors.Transparent, Sum(Quantity) AS Quantity
+            FROM parts_locations
+            LEFT JOIN colors ON colors.RebrickableId = parts_locations.RebrickableColor
+            WHERE parts_locations.RebrickableId LIKE ?
+            GROUP BY parts_locations.RebrickableColor, colors.Name, colors.Hex, colors.Transparent
             ORDER BY Quantity DESC;`,
             [rebrickablePartId],
             (err, rows) => {
@@ -504,7 +504,7 @@ exports.getPartColors = function(rebrickablePartId, callback) {
 exports.getSortedPartsStats = function(callback) {
     exports.init(function(db) {
         db.query(
-            `SELECT SUM(Parts_Locations.Quantity) AS TotalQuantity, Parts_Locations.LocationCode FROM Parts_Locations GROUP BY Parts_Locations.LocationCode ORDER BY SUM(Parts_Locations.Quantity) DESC`,
+            `SELECT SUM(parts_locations.Quantity) AS TotalQuantity, parts_locations.LocationCode FROM parts_locations GROUP BY parts_locations.LocationCode ORDER BY SUM(parts_locations.Quantity) DESC`,
             [],
             (err, rows) => {
                 if (err) {
@@ -521,14 +521,14 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
     exports.init(function(db) {
         //on commence par aller voir si l'utilisateur possèdait deja ce set
         //console.log("UserID: " + userId + ", quantity: " + quantity);
-        db.query(`SELECT * FROM Sets_Users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {
+        db.query(`SELECT * FROM sets_users WHERE SetId = ? AND UserId = ?`, [setId, userId], (err, rows) => {
             if (err) {
                 console.error(err.message);
             }
             if (rows.length == 0) {
                 //si il n'existais pas deja, on doit le crééer
                 db.query(
-                    "INSERT INTO Sets_Users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0) ",
+                    "INSERT INTO sets_users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0) ",
                     [setId, userId, quantity],
                     function(err, result) {
                         if (err) {
@@ -543,7 +543,7 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
                 );
             } else {
                 //si il existais deja, on le met à jour
-                db.query("UPDATE Sets_Users SET quantity=?, isOwned=1, inInventory=1 WHERE SetID=? AND UserId=?", [quantity, setId, userId], function(
+                db.query("UPDATE sets_users SET quantity=?, isOwned=1, inInventory=1 WHERE SetID=? AND UserId=?", [quantity, setId, userId], function(
                     err,
                     result
                 ) {
@@ -564,7 +564,7 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
 exports.updateInventoryForSet = function(setId, delta, userId, callback) {
     exports.init(function(db) {
         //après avoir fait la mise à jour de la quantité, on va mettre à jour l'inventaire des pièces
-        db.query(`SELECT * FROM Sets_Parts WHERE SetId = ?`, [setId], (err, rows) => {
+        db.query(`SELECT * FROM sets_parts WHERE SetId = ?`, [setId], (err, rows) => {
             var query = "";
             var queryParams = [];
             if (err) {
@@ -573,7 +573,7 @@ exports.updateInventoryForSet = function(setId, delta, userId, callback) {
             } else {
                 for (var i = 0; i < rows.length; ++i) {
                     query +=
-                        "INSERT INTO Parts_Locations (Quantity, UserId, RebrickableId, RebrickableColor) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE Quantity=Quantity+? ;";
+                        "INSERT INTO parts_locations (Quantity, UserId, RebrickableId, RebrickableColor) VALUES (?, ?, ?, ?) ON DUPLICATE KEY UPDATE Quantity=Quantity+? ;";
                     queryParams.push(delta, userId, rows[i].PartRebrickableId, rows[i].ColorRebrickableId, delta);
                     //console.log("Part: " + rows[i].PartRebrickableId + ", Color: " + rows[i].ColorRebrickableId + ", Delta: " + rows[i].Quantity * delta);
                 }
@@ -598,7 +598,7 @@ exports.createUser = function(email, password, name, callback) {
         //on hash le password avant de l'enregistrer dans la bd
         var bcrypt = require("bcrypt");
         bcrypt.hash(password, 10, function(err, hash) {
-            db.query("INSERT INTO User(name, PwHash, email, valid) VALUES(?, ?, ?, 0)", [name, hash, email], function(err, result) {
+            db.query("INSERT INTO user(name, PwHash, email, valid) VALUES(?, ?, ?, 0)", [name, hash, email], function(err, result) {
                 if (err) {
                     console.error(err.message);
                     callback(false);
@@ -614,7 +614,7 @@ exports.createUser = function(email, password, name, callback) {
 exports.validateUser = function(mail, password, callback) {
     //console.log("mail: " + mail + " password: " + password);
     exports.init(function(db) {
-        db.query("SELECT * FROM User WHERE email=? AND valid=1;", [mail], (err, row) => {
+        db.query("SELECT * FROM user WHERE email=? AND valid=1;", [mail], (err, row) => {
             if (err) {
                 console.error(err.message);
                 callback(false);
@@ -643,7 +643,7 @@ exports.createActionKey = function(action, userId, callback) {
     const uuidv1 = require("uuid/v1");
     var key = uuidv1();
     exports.init(function(db) {
-        db.query("INSERT INTO MailKey(keyID, type, user) VALUES(?, ?, ?)", [key, action, userId], function(err) {
+        db.query("INSERT INTO mailkey(keyID, type, user) VALUES(?, ?, ?)", [key, action, userId], function(err) {
             if (err) {
                 console.error(err.message);
             }
@@ -658,7 +658,7 @@ SELECT
 	parts_locations.RebrickableId,
 	parts_locations.RebrickableColor,
 	parts_locations.Quantity,
-	sets_parts.Quantity * sets_users.quantity AS QuantityFromSets,
+	sets_parts.Quantity * sets_users.quantity AS QuantityFromsets,
 	parts_locations.Quantity - ( sets_parts.Quantity * sets_users.quantity ) AS Missing,
 	sets.`Name` 
 FROM
