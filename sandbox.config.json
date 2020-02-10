@@ -1,6 +1,9 @@
 {
-  "infiniteLoopProtection": true,
-  "hardReloadOnChange": false,
-  "view": "none",  
-  "template": "node"
+    "infiniteLoopProtection": true,
+    "hardReloadOnChange": false,
+    "view": "none",
+    "template": "node",
+    "container": {
+        "port": 5000
+    }
 }

@@ -45,6 +45,37 @@ exports.getPartInformation = function(rebrickableId, callback) {
     });
 };
 
+exports.forEachLeaves = function(obj, leafPath, call) {
+    if (obj === undefined) {
+        return;
+    }
+    if (Array.isArray(obj)) {
+        for (var i in obj) {
+            var arrayElement = obj[i];
+            exports.forEachLeaves(arrayElement, leafPath, call);
+        }
+        return;
+    }
+    if (leafPath.length === 1) {
+        var returned = call(obj[leafPath[0]], obj);
+        if (returned !== undefined) {
+            obj = returned;
+        }
+    } else {
+        var subLeafPath = Object.assign([], leafPath);
+        var branch = subLeafPath.shift();
+        var subObject = obj[branch];
+        if (Array.isArray(subObject)) {
+            for (var i in subObject) {
+                var subObjectArrayElement = subObject[i];
+                exports.forEachLeaves(subObjectArrayElement, subLeafPath, call);
+            }
+        } else {
+            exports.forEachLeaves(subObject, subLeafPath, call);
+        }
+    }
+};
+
 exports.getColorInformation = function(rebrickableId, callback) {
     db.getColorData(rebrickableId, function(result) {
         //console.log(result);

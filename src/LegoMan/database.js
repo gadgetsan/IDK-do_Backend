@@ -1,4 +1,3 @@
-const async = require("async");
 var mysql = require("mysql");
 
 exports.connection = "";
@@ -17,7 +16,7 @@ exports.releaseConnection = function(callback) {
     //après tout oon ferme la DB
     //console.log("connection Closing, Count: " + exports.connectionCount);
     exports.connectionCount--;
-    if (exports.connectionCount == 0) {
+    if (exports.connectionCount === 0) {
         exports.connection.end();
         exports.connection = "";
         //console.log("Closing master Connection <=====");
@@ -75,7 +74,7 @@ exports.createLocation = function(locationName, locationCode, type, callback) {
     //console.log("LocationName: " + locationName + " LocationCode: " + locationCode, " type: " + type);
     exports.init(function(db) {
         db.query("SELECT * FROM locations WHERE LocationCode = ?;", [locationCode], (err, rows) => {
-            if (rows.length == 0) {
+            if (rows.length === 0) {
                 db.query("INSERT INTO locations (LocationCode, Name, Type) VALUES (?,?, ?)", [locationCode, locationName, type], (err, row) => {
                     //console.dir(rows);
                     if (err) {
@@ -406,7 +405,7 @@ exports.createSetDataIfNotExist = function(rebrickableId, name, json, callback) 
                 console.error("Error connecting: " + err.stack);
                 callback(err);
             } else {
-                if (rows.length == 0) {
+                if (rows.length === 0) {
                     exports.init(function(db) {
                         db.query(
                             "INSERT INTO sets (RebrickableId, Name, RebrickableJSON, Year) VALUES (?, ?, ?, ?)",
@@ -439,7 +438,7 @@ exports.createSetPartIfNotExist = function(partId, partColor, setId, quantity, c
                 console.error("Error connecting: " + err.stack);
                 callback(err);
             } else {
-                if (rows.length == 0) {
+                if (rows.length === 0) {
                     db.query(
                         "INSERT INTO sets_parts (ColorRebrickableId, PartRebrickableId, Quantity, SetId) VALUES (?, ?, ?, ?)",
                         [partColor, partId, quantity, setId],
@@ -525,7 +524,7 @@ exports.updateSetOwnership = function(setId, quantity, userId, callback) {
             if (err) {
                 console.error(err.message);
             }
-            if (rows.length == 0) {
+            if (rows.length === 0) {
                 //si il n'existais pas deja, on doit le crééer
                 db.query(
                     "INSERT INTO sets_users(SetId, UserId, quantity, isOwned, inInventory, isBuilt) VALUES(?, ?, ?, 1, 1, 0) ",
@@ -618,7 +617,7 @@ exports.validateUser = function(mail, password, callback) {
             if (err) {
                 console.error(err.message);
                 callback(false);
-            } else if (row && row.length == 1) {
+            } else if (row && row.length === 1) {
                 //on a trouvé l'usilitateur, on valide le mot de passe
                 //console.log(JSON.stringify(row));
                 var bcrypt = require("bcrypt");
