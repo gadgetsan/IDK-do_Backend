@@ -1,32 +1,32 @@
 {
-  "name": "idk-do-backend-temp",
-  "version": "0.1.2",
-  "description": "Un logiciel de suggestion d'idées cadeau",
-  "main": "src/index.js",
-  "scripts": {
-    "start": "nodemon src/index.js"
-  },
-  "dependencies": {
-    "@google-cloud/firestore": "1.0.1",
-    "async": "3.1.0",
-    "bcrypt": "3.0.3",
-    "cors": "2.8.5",
-    "express": "latest",
-    "express-session": "1.15.6",
-    "mysql": "2.16.0",
-    "mysqldump": "3.1.0",
-    "nodemailer": "5.1.1",
-    "react": "16.7.0",
-    "react-dom": "latest",
-    "sequelize": "5.21.3",
-    "sqlite3": "4.0.6",
-    "uuid": "3.3.2"
-  },
-  "devDependencies": {
-    "nodemon": "latest"
-  },
-  "engines": {
-    "node": "10.17.0"
-  },
-  "keywords": []
+    "name": "idk-do-backend-temp",
+    "version": "0.1.2",
+    "description": "Un logiciel de suggestion d'idées cadeau",
+    "main": "src/index.js",
+    "scripts": {
+        "start": "node src/index.js"
+    },
+    "dependencies": {
+        "@google-cloud/firestore": "1.0.1",
+        "async": "3.1.0",
+        "bcrypt": "3.0.3",
+        "cors": "2.8.5",
+        "express": "latest",
+        "express-session": "1.15.6",
+        "mysql": "2.16.0",
+        "mysqldump": "3.1.0",
+        "nodemailer": "5.1.1",
+        "react": "16.7.0",
+        "react-dom": "latest",
+        "sequelize": "5.21.3",
+        "sqlite3": "4.0.6",
+        "uuid": "3.3.2"
+    },
+    "devDependencies": {
+        "nodemon": "latest"
+    },
+    "engines": {
+        "node": "10.17.0"
+    },
+    "keywords": []
 }

@@ -7,7 +7,7 @@ var connectCtrl = require("./idk-do/connectController");
 var listCtrl = require("./idk-do/listController");
 var idkdoUserSession = require("./idk-do/session");
 
-var legoCtrl = require("./LegoMan/legoController");
+//var legoCtrl = require("./LegoMan/legoController");
 var newLegoCtrl = require("./LegoMan/newLegoController");
 
 var extCtrl = require("./External/externalController");
