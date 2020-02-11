@@ -195,7 +195,7 @@ router.get("/Location/:id", function(req, res) {
             return Model.IncludeMultiRelation(result, Model.Color, ["PartColor", "ColorId"], "Color");
         })
         .then(result => {
-            return Model.IncludeMultiRelation(result, Model.Part, ["PartColor", "PartId"], "Part");
+            return Model.IncludeMultiRelation(result, Model.Part, ["PartColor", "PartId"], "Parts", { invert: true });
         })
         .then(result => {
             return res.send(result);
