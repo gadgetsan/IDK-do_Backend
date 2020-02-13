@@ -17,8 +17,10 @@ router.use("*", function authMiddleware(req, res, next) {
     user.get(req).then(user => {
         if (user) {
             req.user = user;
+            next();
+        } else {
+            res.sendStatus(403);
         }
-        next();
     });
 });
 
