@@ -1,20 +1,31 @@
 var helpers = require("./helpers");
 var express = require("express");
 var Rebrickable = require("./RebrickableInterface");
-var Model = require("./model");
+var Model = require("./Model");
 var cors = require("cors");
+var user = require("./../Auth/User");
 const { Op } = require("sequelize");
 
 var router = express.Router();
+var defaultPageSize = 10;
 
 router.use("*", cors());
+
+router.use("*", function authMiddleware(req, res, next) {
+    //console.log(req.baseUrl);
+    //a ajouter quand on va avoir fait le login
+    user.get(req).then(user => {
+        if (user) {
+            req.user = user;
+        }
+        next();
+    });
+});
 
 router.get("/test", function(req, res) {
     var count = 0;
     res.send("TEST");
 });
-
-var defaultPageSize = 10;
 
 //Test pour la quantité de pièces de chaque set:
 /*

@@ -132,6 +132,10 @@ exports.User = sequelize.define(
             type: Sequelize.STRING,
             allowNull: false
         },
+        PwHash: {
+            type: Sequelize.STRING,
+            allowNull: false
+        },
         Email: {
             type: Sequelize.STRING,
             allowNull: false

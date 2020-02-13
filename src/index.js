@@ -7,8 +7,8 @@ var connectCtrl = require("./idk-do/connectController");
 var listCtrl = require("./idk-do/listController");
 var idkdoUserSession = require("./idk-do/session");
 
-//var legoCtrl = require("./LegoMan/legoController");
-var newLegoCtrl = require("./LegoMan/newLegoController");
+var legoCtrl = require("./Lego/Controller");
+var authCtrl = require("./Auth/Controller");
 
 var extCtrl = require("./External/externalController");
 
@@ -91,8 +91,8 @@ app.post("/api/cancelBought", listCtrl.apiCancelBought);
 app.post("/api/addSecretMessage", listCtrl.apiAddSecretMessage);
 app.get("/api/experiment", listCtrl.experiment);
 
-//app.use("/lego", legoCtrl);
-app.use("/lego", newLegoCtrl);
+app.use("/auth", authCtrl);
+app.use("/lego", legoCtrl);
 
 //external api (for database backup)
 app.get("/ext/bckp", extCtrl.getBackup);
