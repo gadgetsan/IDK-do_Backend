@@ -11,7 +11,7 @@ module.exports = {
             res.send(result);
         });
     },
-    pong: function(req, res) {
+    ping: function(req, res) {
         res.send("pong");
     }
 };
