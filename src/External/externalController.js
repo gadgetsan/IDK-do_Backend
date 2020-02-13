@@ -10,5 +10,8 @@ module.exports = {
             res.set({ "Content-Disposition": "attachment; filename=mysqldump.sql" });
             res.send(result);
         });
+    },
+    pong: function(req, res) {
+        res.send("pong");
     }
 };

@@ -96,5 +96,6 @@ app.use("/lego", legoCtrl);
 
 //external api (for database backup)
 app.get("/ext/bckp", extCtrl.getBackup);
+app.get("/ext/ping", extCtrl.ping);
 
 app.listen(process.env.PORT || 5000);
