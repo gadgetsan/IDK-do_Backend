@@ -2,6 +2,7 @@ var express = require("express");
 var cors = require("cors");
 var app = express();
 const session = require("express-session");
+require("newrelic");
 
 var connectCtrl = require("./idk-do/connectController");
 var listCtrl = require("./idk-do/listController");

@@ -15,7 +15,7 @@
         "express-session": "1.15.6",
         "mysql": "2.16.0",
         "mysqldump": "3.1.0",
-        "nodemailer": "5.1.1",
+        "newrelic": "6.4.0",
         "react": "16.7.0",
         "react-dom": "latest",
         "sequelize": "5.21.3",
