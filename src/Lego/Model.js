@@ -1,10 +1,14 @@
 const Sequelize = require("sequelize");
 var helpers = require("./helpers");
+var Rebrickable = require("./RebrickableInterface");
 
 const sequelize = new Sequelize(process.env.mysql_database, process.env.mysql_user, process.env.mysql_password, {
     host: process.env.mysql_host,
     dialect: "mysql",
-    logging: false
+    logging: false,
+    dialectOptions: {
+        multipleStatements: true
+    }
 });
 exports.sequelize = sequelize;
 
@@ -308,6 +312,10 @@ exports.Set.hasMany(exports.SetPart, {
     constraints: false
 });
 
+exports.Set.hasMany(exports.SetUser, {
+    constraints: false
+});
+
 exports.Location.hasMany(exports.PartLocation, {
     constraints: false
 });
@@ -442,18 +450,21 @@ exports.SetPart.InsertWithLinks = async function(setPartToUpsert) {
     return exports
         .upsertAndRetrieve(exports.Part, setPartToUpsert.partsColor.part)
         .then(part => {
+            part = part.toJSON();
             setPartToUpsert.partsColor.partId = part.id;
             setPartToUpsert.partId = part.id;
             delete setPartToUpsert.partsColor.part;
             return exports.upsertAndRetrieve(exports.Color, setPartToUpsert.partsColor.color);
         })
         .then(color => {
+            color = color.toJSON();
             setPartToUpsert.partsColor.colorId = color.id;
             setPartToUpsert.colorId = color.id;
             delete setPartToUpsert.partsColor.color;
             return exports.upsertAndRetrieve(exports.PartColor, setPartToUpsert.partsColor);
         })
         .then(partsColor => {
+            partsColor = partsColor.toJSON();
             setPartToUpsert.partsColorId = partsColor.id;
             delete setPartToUpsert.partsColor;
             //note: si ça me dit qu'on a pas de default, c'est qu'il manque une relation
@@ -476,6 +487,7 @@ exports.upsertAndRetrieve = function(modelObject, toUpsert) {
             for (var parameter in toUpsert) {
                 if (found[parameter] !== toUpsert[parameter]) {
                     updateNeeded = true;
+                    break;
                 }
             }
             if (updateNeeded) {
@@ -495,6 +507,60 @@ exports.upsertAndRetrieve = function(modelObject, toUpsert) {
             console.error("UniqueWhere: ");
             console.log(uniqueWhere);
             console.error(err);
+        });
+};
+
+//FROM https://stackoverflow.com/questions/18304504/create-or-update-sequelize
+exports.upsert = function(modelObject, values, condition) {
+    return modelObject.findOne({ where: condition }).then(function(obj) {
+        // update
+        if (obj) return obj.update(values);
+        // insert
+        return modelObject.create(values);
+    });
+};
+
+exports.updateSet = function(setCode) {
+    var currentSet = {};
+    var stats = {};
+    return Rebrickable.GetSetInfo(setCode)
+        .then(set => {
+            //on va commencer par aller chercher les infos du set
+            var modelSet = Rebrickable.SetToModel(set);
+            return exports.upsertAndRetrieve(exports.Set, modelSet);
+        })
+        .then(retrievedSet => {
+            //ensuite on va supprimer tout les SetPart
+            currentSet = retrievedSet;
+            return exports.SetPart.destroy({
+                where: {
+                    setId: retrievedSet.id
+                }
+            });
+        })
+        .then(() => {
+            //ensuite on va aller chercher les données de Rebrickable
+            return Rebrickable.GetPartsForSet(setCode);
+        })
+        .then(partList => {
+            //on va enregistrer ce qu'on a été cherché¸
+            stats.partsCount = partList.length;
+            //partList = [partList[0]];
+            return Promise.all(
+                partList.map(part => {
+                    //on va commencer par convertir en objet DB
+                    //console.log(JSON.stringify(part));
+                    //part.set = currentSet;
+                    var partToAdd = Rebrickable.SetPartToModel(part);
+                    partToAdd.setId = currentSet.id;
+                    return exports.SetPart.InsertWithLinks(partToAdd);
+                })
+            );
+        })
+        .then(result => {
+            //on va enregistrer ce qu'on a été cherché¸
+            console.log("Updated the " + stats.partsCount + " different parts of the set named " + currentSet.Name + "(" + setCode + ") with success");
+            return Promise.resolve(currentSet);
         });
 };
 
@@ -536,26 +602,89 @@ Set.findAll({
     Ajout de la table Parts_Colors: maintenant Parts_Locations et Sets_parts vont réferer à cette table pour les parts, on doit donc la populer
         Constraint Unique pour Part/Color:
         CREATE UNIQUE INDEX parts_colors
-        ON parts_colors(`PartId`,`ColorId`)
+        ON parts_colors(PartId,ColorId)
 
-        INSERT INTO parts_colors(`PartId`,`ColorId`)
-        SELECT `PartId`,`ColorId` FROM `parts_locations` GROUP BY `PartId`,`ColorId`
-
-        //Pour Bypasser les duplicates
-        INSERT INTO parts_colors(`PartId`,`ColorId`)
-        SELECT `sets_parts`.`PartId`,`sets_parts`.`ColorId` FROM `sets_parts` 
-        LEFT JOIN `parts_colors` ON parts_colors.PartId = sets_parts.PartId AND parts_colors.ColorId = sets_parts.ColorId 
-        WHERE parts_colors.Id IS NULL
-        GROUP BY `sets_parts`.`PartId`,`sets_parts`.`ColorId`
+        //on créé les parts_colors qui manque
+        INSERT INTO parts_colors(
+            PartId,
+            ColorId,
+            CreatedAt,
+            UpdatedAt
+        )
+        SELECT
+            parts_locations.PartId,
+            parts_locations.ColorId,
+            NOW() AS CreatedAt, NOW() AS UpdatedAt
+        FROM
+            parts_locations
+            LEFT JOIN parts_colors ON parts_colors.PartId = parts_locations.PartId AND parts_locations.ColorId = parts_colors.ColorId
+            WHERE parts_colors.Id IS NULL
+        GROUP BY
+            PartId, ColorId
 
         //update les colonnes        
         UPDATE parts_locations
         INNER JOIN parts_colors ON parts_colors.PartId = parts_locations.PartId AND parts_colors.ColorId = parts_locations.ColorId
-        SET parts_locations.PartColorId = parts_colors.Id
+        SET parts_locations.PartsColorId = parts_colors.Id
 
         UPDATE sets_parts
         INNER JOIN parts_colors ON parts_colors.PartId = sets_parts.PartId AND parts_colors.ColorId = sets_parts.ColorId
         SET sets_parts.PartColorId = parts_colors.Id
+
+//MISC
+
+        Parts_Locations associé au même Parts_Colors...
+        SELECT PartsColorId, UserId, COUNT(Id) FROM `parts_locations` GROUP BY PartsColorId, UserId ORDER BY COUNT(Id) DESC 
+
+        AJOUT DES PARTS MANQUANTES DANS PARTS_LOCATIONS
+            INSERT INTO parts(
+                RebrickableId,
+                CreatedAt,
+                UpdatedAt,
+                NAME,
+                RebrickableJSON,
+                RebrickableImageUrl
+            )
+            SELECT
+                RebrickableId,
+                NOW() AS CreatedAt, NOW() AS UpdatedAt, "" AS NAME, "{}" AS RebrickableJSON, "" AS RebrickableImageUrl
+            FROM
+                `parts_locations`
+            WHERE
+                PartId = 0 OR PartID IS NULL
+            GROUP BY
+                RebrickableId
+
+
+        UPDATE `parts_locations`
+        JOIN parts ON parts.RebrickableId = parts_locations.RebrickableId
+        SET parts_locations.PartId = parts.Id
+        WHERE PartId = 0        
+
+        AJOUT DES Couleurs MANQUANTES DANS PARTS_LOCATIONS
+            INSERT INTO colors(
+                RebrickableId,
+                CreatedAt,
+                UpdatedAt,
+                NAME,
+                RebrickableJSON,
+                Hex,
+                Transparent
+            )
+            SELECT
+                RebrickableColor,
+                NOW() AS CreatedAt, NOW() AS UpdatedAt, "" AS NAME, "{}" AS RebrickableJSON, "" AS Hex, 0 as Transparent
+            FROM
+                `parts_locations`
+            WHERE
+                ColorId = 0 OR ColorId IS NULL
+            GROUP BY
+                RebrickableColor
+
+        UPDATE `parts_locations`
+        JOIN colors ON colors.RebrickableId = parts_locations.RebrickableColor
+        SET parts_locations.ColorId = colors.Id
+        WHERE ColorId = 0
 
 
 

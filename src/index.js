@@ -2,7 +2,6 @@ var express = require("express");
 var cors = require("cors");
 var app = express();
 const session = require("express-session");
-require("newrelic");
 
 var connectCtrl = require("./idk-do/connectController");
 var listCtrl = require("./idk-do/listController");
@@ -98,5 +97,6 @@ app.use("/lego", legoCtrl);
 //external api (for database backup)
 app.get("/ext/bckp", extCtrl.getBackup);
 app.get("/ext/ping", extCtrl.ping);
+app.get("/ext/UpdateAnySet", extCtrl.updateAnySet);
 
 app.listen(process.env.PORT || 5000);

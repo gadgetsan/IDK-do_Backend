@@ -1,7 +1,10 @@
 var Model = require("./../Lego/Model");
-var debug = false;
+var debug = process.env.DEBUG;
 
 module.exports.validate = (username, password) => {
+    if (debug) {
+        return Promise.resolve({ Name: "DEBUG", Email: "test1@test.com", id: 7 });
+    }
     return Model.User.findOne({ where: { email: username, Valid: true } })
         .then(user => {
             user = user.toJSON();
@@ -38,7 +41,7 @@ module.exports.get = req => {
         return module.exports.validate(username, password);
     } else {
         if (debug) {
-            return Promise.resolve({ Name: "DEBUG", Email: "test1@test.com", userId: 2 });
+            return Promise.resolve({ Name: "DEBUG", Email: "test1@test.com", id: 7 });
         } else {
             return Promise.resolve(undefined);
         }

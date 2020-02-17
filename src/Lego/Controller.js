@@ -4,7 +4,7 @@ var Rebrickable = require("./RebrickableInterface");
 var Model = require("./Model");
 var cors = require("cors");
 var user = require("./../Auth/User");
-const { Op } = require("sequelize");
+const { Op, QueryTypes } = require("sequelize");
 
 var router = express.Router();
 var defaultPageSize = 10;
@@ -17,6 +17,7 @@ router.use("*", function authMiddleware(req, res, next) {
     user.get(req).then(user => {
         if (user) {
             req.user = user;
+            //console.log(user);
             next();
         } else {
             res.sendStatus(403);
@@ -25,8 +26,10 @@ router.use("*", function authMiddleware(req, res, next) {
 });
 
 router.get("/test", function(req, res) {
-    var count = 0;
-    res.send("TEST");
+    Model.updateSet("6398-1").then(result => {
+        res.send(result);
+        //return res.send("Updated Set #" + result.RebrickableId + ": " + result.Name);
+    });
 });
 
 //Test pour la quantité de pièces de chaque set:
@@ -42,14 +45,18 @@ router.get("/Parts/:page/:search?", function(req, res) {
     if (!req.params.search) {
         //si on n'as pas de paramètres de recherche, on limite à ceux qui n'ont pas d'emplacement
         //https://stackoverflow.com/questions/43122077/left-excluding-join-in-sequelize
-        promise = Model.sequelize.query("SELECT DISTINCT partId FROM parts_locations").then(result => {
-            var flattenedList = [];
-            result[0].forEach(element => {
-                flattenedList.push(element.partId);
+        promise = Model.sequelize
+            .query("SELECT DISTINCT partId FROM parts_locations WHERE UserId = :userId", {
+                replacements: { userId: req.user.id }
+            })
+            .then(result => {
+                var flattenedList = [];
+                result[0].forEach(element => {
+                    flattenedList.push(element.partId);
+                });
+                //on a recu les part qui on des emplacements, maintenant, on ne veux pas les avoir dans la prochaine requête
+                return Promise.resolve(flattenedList);
             });
-            //on a recu les part qui on des emplacements, maintenant, on ne veux pas les avoir dans la prochaine requête
-            return Promise.resolve(flattenedList);
-        });
     }
 
     promise
@@ -87,11 +94,19 @@ router.get("/Sets/:page/:search?", function(req, res) {
     var pageSize = defaultPageSize;
     var pageNum = req.params.page;
     var search = req.params.search ? req.params.search : "";
+    var where = { [Op.or]: [{ Name: { [Op.like]: "%" + search + "%" } }, { RebrickableId: { [Op.like]: "%" + search + "%" } }] };
+    var include = undefined;
+    if (search === "") {
+        //on va aller chercher les set de ce user
+        where = undefined;
+        include = [{ model: Model.SetUser, where: { UserId: req.user.id } }];
+    }
 
     Model.Set.findAll({
         limit: pageSize,
         offset: (pageNum - 1) * pageSize,
-        where: { [Op.or]: [{ Name: { [Op.like]: "%" + search + "%" } }, { RebrickableId: { [Op.like]: "%" + search + "%" } }] }
+        where,
+        include
     })
         .then(result => {
             return res.send(result);
@@ -135,7 +150,7 @@ router.get("/Part/:id", function(req, res) {
 
 router.get("/Set/:id", function(req, res) {
     var setId = req.params.id;
-    Model.Set.findByPk(setId, { include: [{ model: Model.SetPart, separate: true }] })
+    Model.Set.findByPk(setId, { include: [{ model: Model.SetPart, separate: true }, { model: Model.SetUser, separate: true, where: { UserId: req.user.id } }] })
         .then(result => {
             return Model.IncludeMultiRelation(result.toJSON(), Model.Color, "sets_parts", "colorId", "Color");
         })
@@ -166,7 +181,7 @@ router.get("/Set/:id", function(req, res) {
 router.all("/Part/:id/ChangeLocation/:locationId", function(req, res) {
     //TESTWITH: https://21sle.sse.codesandbox.io/lego2/Part/27/ChangeLocation/97
     //TODO: passer par les PartColor, parce que partId ne sera plus fiable bientot...
-    Model.PartLocation.update({ locationId: req.params.locationId }, { where: { partId: req.params.id } })
+    Model.PartLocation.update({ locationId: req.params.locationId }, { where: { [Op.and]: [{ partId: req.params.id }, { UserId: req.user.id }] } })
         .then(result => {
             return Model.Part.findByPk(req.params.id, { include: [{ model: Model.PartColor, separate: true }] });
         })
@@ -223,7 +238,12 @@ router.get("/Locations/:page?/:search?", function(req, res) {
     var pageSize = defaultPageSize;
     var searchTerm = req.params.search ? req.params.search : "";
     var whereObject = {
-        where: { [Op.or]: [{ Name: { [Op.like]: "%" + searchTerm + "%" } }, { LocationCode: { [Op.like]: "%" + searchTerm + "%" } }] }
+        where: {
+            [Op.and]: [
+                { [Op.or]: [{ Name: { [Op.like]: "%" + searchTerm + "%" } }, { LocationCode: { [Op.like]: "%" + searchTerm + "%" } }] },
+                { UserId: req.user.id }
+            ]
+        }
     };
     if (req.params.page !== undefined) {
         whereObject.limit = pageSize;
@@ -240,57 +260,89 @@ router.get("/Locations/:page?/:search?", function(req, res) {
         });
 });
 
+router.all("/ChangeQuantity/:setId/:newQuantity", function(req, res) {
+    Model.upsert(
+        Model.SetUser,
+        {
+            Quantity: req.params.newQuantity,
+            isOwned: true,
+            inInventory: true,
+            isBuilt: false,
+            setId: req.params.setId,
+            userId: req.user.id
+        },
+        {
+            setId: req.params.setId,
+            userId: req.user.id
+        }
+    )
+        .then(result => {
+            res.send(result);
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).send(error);
+        });
+});
+
+router.all("/UpdateAny", function(req, res) {
+    var oneMonthAgo = new Date();
+    var start = new Date();
+    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+    //on va aller voir nos sets et regarder ceux que ça fait longtemps qu'on as pas mis à jour
+    Model.Set.findOne({
+        where: {
+            updatedAt: {
+                [Op.lt]: oneMonthAgo
+            }
+        }
+    }).then(result => {
+        if (result !== null) {
+            Model.updateSet(result.RebrickableId).then(result => {
+                var end = new Date() - start;
+                return res.send("Updated Set #" + result.RebrickableId + ": " + result.Name + " in " + end + "ms");
+            });
+        } else {
+            return res.send("All sets are up to date");
+        }
+        //console.log(result.toJSON());
+    });
+});
+
+router.all("/UpdateQuantities", function(req, res) {
+    var start = new Date();
+    var fs = require("fs");
+    fs.readFile("src/Lego/SQL/parts_locations_update.sql", "utf8", function(err, query) {
+        if (err) throw err;
+        Model.sequelize
+            .query(query, {
+                replacements: { userId: req.user.id }
+            })
+            .then(result => {
+                var end = new Date() - start;
+                //console.log(result);
+                console.info("Execution time:" + end + "ms");
+                res.send("OK");
+            });
+    });
+});
+
 router.all("/UpdateSet/:setId", function(req, res) {
     //vu que cette requête est couteuse, on devrais la limiter...
     //on va chercher la liste de pièces
     //TESTWITH: https://2pl3rqowrj.sse.codesandbox.io/lego2/UpdateSet/75198-1
+    var start = new Date();
+    console.info("Starting the update of Set # " + req.params.setId);
     var setCode = req.params.setId;
-    var currentSet = {};
-    var stats = {};
-
-    Rebrickable.GetSetInfo(setCode)
-        .then(set => {
-            //on va commencer par aller chercher les infos du set
-            var modelSet = Rebrickable.SetToModel(set);
-            return Model.upsertAndRetrieve(Model.Set, modelSet);
-        })
-        .then(retrievedSet => {
-            //ensuite on va supprimer tout les SetPart
-            currentSet = retrievedSet;
-            return Model.SetPart.destroy({
-                where: {
-                    setId: retrievedSet.id
-                }
-            });
-        })
-        .then(() => {
-            //ensuite on va aller chercher les données de Rebrickable
-            return Rebrickable.GetPartsForSet(setCode);
-        })
-        .then(partList => {
-            //on va enregistrer ce qu'on a été cherché¸
-            stats.partsCount = partList.length;
-            //partList = [partList[0]];
-            return Promise.all(
-                partList.map(part => {
-                    //on va commencer par convertir en objet DB
-                    //console.log(JSON.stringify(part));
-                    //part.set = currentSet;
-                    var partToAdd = Rebrickable.SetPartToModel(part);
-                    partToAdd.setId = currentSet.id;
-                    return Model.SetPart.InsertWithLinks(partToAdd);
-                })
-            );
-        })
+    Model.updateSet(setCode)
         .then(result => {
-            //on va enregistrer ce qu'on a été cherché¸
-            console.log("Updated the " + stats.partsCount + " different parts of the set named " + currentSet.Name + "(" + setCode + ") with success");
-            return res.send(currentSet);
+            var end = new Date() - start;
+            console.info("Execution time:" + end + "ms");
+            res.send(result);
         })
-        .catch(err => {
-            console.error("ERROR: " + err.message);
-            console.dir(err);
-            res.send(err);
+        .catch(error => {
+            console.error(error);
+            res.sendStatus(500);
         });
 });
 

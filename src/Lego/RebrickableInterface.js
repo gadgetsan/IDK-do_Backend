@@ -3,7 +3,33 @@ var https = require("https");
 var defaultPageSize = 50;
 
 exports.GetPartsForSet = function(rebrickableId) {
-    return rebrickableFetchMulti("sets", rebrickableId, "parts");
+    var partColorsList = [];
+    return rebrickableFetchMulti(rebrickableFetch, { primaryData: "sets", rebrickableId, secondaryData: "parts" })
+        .then(result => {
+            //on va aller chercher les parts
+            partColorsList = result;
+            var idList = result
+                .map(element => {
+                    return element.part.part_num;
+                })
+                .join(",");
+            return rebrickableFetchMulti(rebrickableFetchParts, { partListString: idList });
+        })
+        .then(result => {
+            //on transform en map
+            var partMap = result.reduce(function(map, obj) {
+                map[obj.part_num] = obj;
+                return map;
+            }, {});
+            partColorsList = partColorsList.map(partColor => {
+                if (partMap[partColor.part.part_num]) {
+                    partColor.part.any_part_image_url = partMap[partColor.part.part_num].part_img_url;
+                }
+                return partColor;
+            });
+            //on va aller chercher les parts
+            return Promise.resolve(partColorsList);
+        });
 };
 exports.GetSetInfo = function(rebrickableId) {
     return rebrickableFetch({ primaryData: "sets", rebrickableId: rebrickableId });
@@ -23,7 +49,8 @@ exports.SetToModel = function(rebrickableSet) {
 exports.PartToModel = function(rebrickablePart) {
     var modelPart = {
         RebrickableId: rebrickablePart.part_num,
-        name: rebrickablePart.name
+        name: rebrickablePart.name,
+        RebrickableImageUrl: rebrickablePart.any_part_image_url
     };
     return modelPart;
 };
@@ -63,29 +90,23 @@ exports.SetPartToModel = function(rebrickableSetPart) {
     return modelSetPart;
 };
 
-var rebrickableFetchMulti = function(primaryData, rebrickableId, secondaryData) {
-    return rebrickableFetch({ primaryData: primaryData, rebrickableId: rebrickableId, secondaryData: secondaryData, page: 1, pageSize: defaultPageSize }).then(
-        function(result) {
-            var pageCount = Math.ceil(result.count / defaultPageSize);
-            var fetchPromises = [];
-            //on genere l'array de promesse qui va s'occuper d'aller chercher les données
-            for (var i = 0; i < pageCount; i++) {
-                fetchPromises[i] = rebrickableFetch({
-                    primaryData: primaryData,
-                    rebrickableId: rebrickableId,
-                    secondaryData: secondaryData,
-                    page: i + 1,
-                    pageSize: defaultPageSize
-                });
-            }
-
-            //maintenant, on va les fetcher
-            return Promise.all(fetchPromises).then(result => {
-                //console.dir(cleanPageResults(result));
-                return cleanPageResults(result);
-            });
+var rebrickableFetchMulti = function(passedFunction, params) {
+    var firstParams = { ...params, page: 1, pageSize: defaultPageSize };
+    return passedFunction(firstParams).then(function(result) {
+        var pageCount = Math.ceil(result.count / defaultPageSize);
+        var fetchPromises = [];
+        //on genere l'array de promesse qui va s'occuper d'aller chercher les données
+        for (var i = 0; i < pageCount; i++) {
+            var subParams = { ...params, page: i + 1, pageSize: defaultPageSize };
+            fetchPromises[i] = passedFunction(subParams);
         }
-    );
+
+        //maintenant, on va les fetcher
+        return Promise.all(fetchPromises).then(result => {
+            //console.dir(cleanPageResults(result));
+            return cleanPageResults(result);
+        });
+    });
 };
 
 var rebrickableFetch = function(parameters) {
@@ -106,6 +127,19 @@ var rebrickableFetch = function(parameters) {
         urlString = "https://rebrickable.com/api/v3/lego/" + parameters.primaryData + "/" + parameters.rebrickableId + "/?key=" + key;
     }
     //console.log(urlString);
+    return simpleFetch(urlString);
+};
+
+var rebrickableFetchParts = function(parameters) {
+    var urlString =
+        "https://rebrickable.com/api/v3/lego/parts/?part_nums=" +
+        parameters.partListString +
+        "&inc_part_details=1&page=" +
+        parameters.page +
+        "&page_size=" +
+        parameters.pageSize +
+        "&key=" +
+        key;
     return simpleFetch(urlString);
 };
 
