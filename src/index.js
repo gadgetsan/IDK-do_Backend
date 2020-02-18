@@ -11,7 +11,6 @@ var legoCtrl = require("./Lego/Controller");
 var authCtrl = require("./Auth/Controller");
 
 var extCtrl = require("./External/externalController");
-var extendTimeoutMiddleware = require("./External/extendTimeoutMiddleware");
 
 app.use(
     session({
@@ -96,7 +95,6 @@ app.use("/auth", authCtrl);
 app.use("/lego", legoCtrl);
 
 //external api (for database backup)
-app.use("/ext/*", extendTimeoutMiddleware);
 app.get("/ext/bckp", extCtrl.getBackup);
 app.get("/ext/ping", extCtrl.ping);
 app.get("/ext/UpdateAnySet", extCtrl.updateAnySet);
