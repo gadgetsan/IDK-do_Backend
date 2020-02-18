@@ -25,12 +25,7 @@ router.use("*", function authMiddleware(req, res, next) {
     });
 });
 
-router.get("/test", function(req, res) {
-    Model.updateSet("6398-1").then(result => {
-        res.send(result);
-        //return res.send("Updated Set #" + result.RebrickableId + ": " + result.Name);
-    });
-});
+router.get("/test", function(req, res) {});
 
 //Test pour la quantité de pièces de chaque set:
 /*
@@ -243,7 +238,8 @@ router.get("/Locations/:page?/:search?", function(req, res) {
                 { [Op.or]: [{ Name: { [Op.like]: "%" + searchTerm + "%" } }, { LocationCode: { [Op.like]: "%" + searchTerm + "%" } }] },
                 { UserId: req.user.id }
             ]
-        }
+        },
+        include: [{ model: Model.PartLocation, separate: true }]
     };
     if (req.params.page !== undefined) {
         whereObject.limit = pageSize;

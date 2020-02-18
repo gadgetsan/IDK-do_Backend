@@ -523,6 +523,7 @@ exports.upsert = function(modelObject, values, condition) {
 exports.updateSet = function(setCode) {
     var currentSet = {};
     var stats = {};
+    var start = new Date();
     return Rebrickable.GetSetInfo(setCode)
         .then(set => {
             //on va commencer par aller chercher les infos du set
@@ -559,7 +560,18 @@ exports.updateSet = function(setCode) {
         })
         .then(result => {
             //on va enregistrer ce qu'on a été cherché¸
-            console.log("Updated the " + stats.partsCount + " different parts of the set named " + currentSet.Name + "(" + setCode + ") with success");
+            var end = new Date() - start;
+            console.log(
+                "Updated the " +
+                    stats.partsCount +
+                    " different parts of the set named " +
+                    currentSet.Name +
+                    "(" +
+                    setCode +
+                    ") with success. It took " +
+                    end +
+                    "ms"
+            );
             return Promise.resolve(currentSet);
         });
 };
