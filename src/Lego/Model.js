@@ -8,6 +8,12 @@ const sequelize = new Sequelize(process.env.mysql_database, process.env.mysql_us
     logging: false,
     dialectOptions: {
         multipleStatements: true
+    },
+    pool: {
+        max: 30,
+        min: 0,
+        acquire: 100000,
+        idle: 5000
     }
 });
 exports.sequelize = sequelize;
@@ -37,6 +43,10 @@ exports.Set = sequelize.define(
         ImageURL: {
             type: Sequelize.STRING,
             defaultValue: "",
+            allowNull: true
+        },
+        PartCount: {
+            type: Sequelize.INTEGER,
             allowNull: true
         }
     },
@@ -400,11 +410,16 @@ exports.IncludeMultiRelation = async function(startingObject, modelElement = exp
                         var currentObject = startingObject[i];
                         var subItemMap = {};
                         helpers.forEachLeaves(currentObject, path, (leaf, parent) => {
-                            if (leaf === 0) {
+                            if (leaf === 0 || leaf === null) {
                                 return;
                             }
                             var invertToAdd = reducedToAdd[leaf];
-                            invertToAdd[path[path.length - 2]] = parent;
+                            if (invertToAdd[path[path.length - 2]]) {
+                                if (!Array.isArray(invertToAdd[path[path.length - 2]])) invertToAdd[path[path.length - 2]] = [];
+                                invertToAdd[path[path.length - 2]].push(parent);
+                            } else {
+                                invertToAdd[path[path.length - 2]] = parent;
+                            }
                             subItemMap[leaf] = invertToAdd;
                         });
                         //enlever duplicates dans currentObject[subItemName]
@@ -416,11 +431,16 @@ exports.IncludeMultiRelation = async function(startingObject, modelElement = exp
                 } else {
                     var subItemMap = {};
                     helpers.forEachLeaves(startingObject, path, (leaf, parent) => {
-                        if (leaf === 0) {
+                        if (leaf === 0 || leaf === null) {
                             return;
                         }
                         var invertToAdd = reducedToAdd[leaf];
-                        invertToAdd[path[path.length - 2]] = parent;
+                        if (invertToAdd[path[path.length - 2]]) {
+                            if (!Array.isArray(invertToAdd[path[path.length - 2]])) invertToAdd[path[path.length - 2]] = [];
+                            invertToAdd[path[path.length - 2]].push(parent);
+                        } else {
+                            invertToAdd[path[path.length - 2]] = parent;
+                        }
                         subItemMap[leaf] = invertToAdd;
                     });
                     startingObject[subItemName] = [];
@@ -698,6 +718,10 @@ Set.findAll({
         SET parts_locations.ColorId = colors.Id
         WHERE ColorId = 0
 
+        //pour obtenir tout les sets dans la db:
+        INSERT INTO sets_users( CreatedAt, UpdatedAt, SetId, UserId, quantity, isOwned, inInventory, isBuilt)
+        SELECT NOW() AS CreatedAt, NOW() AS UpdatedAt, sets.Id AS SetId, 7 AS UserId, 1 AS quantity, 1 AS isOwned, 1 AS inInventory, 0 AS isBuilt
+        FROM sets ON DUPLICATE KEY UPDATE quantity=1
 
 
 */

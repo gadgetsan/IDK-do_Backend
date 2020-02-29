@@ -31,9 +31,40 @@ module.exports = {
                 res.send("Updating Set #" + result.RebrickableId + ": " + result.Name);
                 return LegoModel.updateSet(result.RebrickableId);
             } else {
-                return res.send("All sets are up to date");
+                //si on n'as pas de set que ça fait plusieurs mois qu'on as pas mis à jour, on va aller chercher ceux qui n'ont pas la bonne quantité
+                LegoModel.sequelize
+                    .query(
+                        "SELECT * FROM (SELECT sets.Name, sets.RebrickableId, sets.PartCount, SUM(sets_parts.Quantity) AS TotalQuantity FROM sets LEFT JOIN sets_parts ON sets_parts.SetId = sets.Id WHERE sets_parts.isSpare = false GROUP BY sets.Name, sets.PartCount, sets.RebrickableId) AS Quantities WHERE PartCount != TotalQuantity"
+                    )
+                    .then(result => {
+                        var actualResult = result[0];
+                        var firstResult = actualResult[0];
+                        if (actualResult.length === 0) {
+                            return res.send("All sets are up to date");
+                        } else {
+                            res.send(
+                                "Updating Set #" +
+                                    firstResult.RebrickableId +
+                                    ": " +
+                                    firstResult.Name +
+                                    " because it had " +
+                                    firstResult.TotalQuantity +
+                                    " instead of " +
+                                    firstResult.PartCount +
+                                    " parts."
+                            );
+                            return LegoModel.updateSet(firstResult.RebrickableId);
+                        }
+                    });
             }
             //console.log(result.toJSON());
         });
     }
 };
+
+/*
+SELECT * FROM (SELECT sets.Name, sets.PartCount, SUM(sets_parts.Quantity) AS TotalQuantity FROM sets
+LEFT JOIN sets_parts ON sets_parts.SetId = sets.Id
+WHERE sets_parts.isSpare = false
+GROUP BY sets.Name, sets.PartCount) AS Quantities WHERE PartCount != TotalQuantity
+*/

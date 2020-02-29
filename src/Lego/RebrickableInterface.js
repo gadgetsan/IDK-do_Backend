@@ -41,7 +41,8 @@ exports.SetToModel = function(rebrickableSet) {
         RebrickableId: rebrickableSet.set_num,
         RebrickableJSON: JSON.stringify(rebrickableSet),
         Year: rebrickableSet.year,
-        ImageURL: rebrickableSet.set_img_url
+        ImageURL: rebrickableSet.set_img_url,
+        PartCount: rebrickableSet.num_parts
     };
     return modelSet;
 };

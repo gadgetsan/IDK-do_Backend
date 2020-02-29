@@ -25,7 +25,11 @@ router.use("*", function authMiddleware(req, res, next) {
     });
 });
 
-router.get("/test", function(req, res) {});
+router.get("/test", function(req, res) {
+    Model.Set.findAll().then(sets => {
+        res.send(sets);
+    });
+});
 
 //Test pour la quantité de pièces de chaque set:
 /*
@@ -41,7 +45,7 @@ router.get("/Parts/:page/:search?", function(req, res) {
         //si on n'as pas de paramètres de recherche, on limite à ceux qui n'ont pas d'emplacement
         //https://stackoverflow.com/questions/43122077/left-excluding-join-in-sequelize
         promise = Model.sequelize
-            .query("SELECT DISTINCT partId FROM parts_locations WHERE UserId = :userId", {
+            .query("SELECT DISTINCT partId FROM parts_locations WHERE UserId = :userId AND LocationId IS NOT NULL", {
                 replacements: { userId: req.user.id }
             })
             .then(result => {
@@ -146,17 +150,15 @@ router.get("/Part/:id", function(req, res) {
 router.get("/Set/:id", function(req, res) {
     var setId = req.params.id;
     Model.Set.findByPk(setId, { include: [{ model: Model.SetPart, separate: true }, { model: Model.SetUser, separate: true, where: { UserId: req.user.id } }] })
-        .then(result => {
-            return Model.IncludeMultiRelation(result.toJSON(), Model.Color, "sets_parts", "colorId", "Color");
-        })
-        .then(result => {
-            return Model.IncludeMultiRelation(result, Model.Color, ["sets_parts", "colorId"], "Color");
-        })
+
         .then(result => {
             return Model.IncludeMultiRelation(result, Model.PartColor, ["sets_parts", "partsColorId"], "Parts", { invert: true });
         })
         .then(result => {
             return Model.IncludeMultiRelation(result, Model.Part, ["Parts", "partId"], "Part");
+        })
+        .then(result => {
+            return Model.IncludeMultiRelation(result, Model.Color, ["Parts", "colorId"], "Color");
         })
         .then(result => {
             return Model.IncludeMultiRelation(result, Model.PartLocation, ["Parts", "id"], "PartLocations", { fk: "partsColorId" });
@@ -279,30 +281,6 @@ router.all("/ChangeQuantity/:setId/:newQuantity", function(req, res) {
             console.error(error);
             res.status(500).send(error);
         });
-});
-
-router.all("/UpdateAny", function(req, res) {
-    var oneMonthAgo = new Date();
-    var start = new Date();
-    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-    //on va aller voir nos sets et regarder ceux que ça fait longtemps qu'on as pas mis à jour
-    Model.Set.findOne({
-        where: {
-            updatedAt: {
-                [Op.lt]: oneMonthAgo
-            }
-        }
-    }).then(result => {
-        if (result !== null) {
-            Model.updateSet(result.RebrickableId).then(result => {
-                var end = new Date() - start;
-                return res.send("Updated Set #" + result.RebrickableId + ": " + result.Name + " in " + end + "ms");
-            });
-        } else {
-            return res.send("All sets are up to date");
-        }
-        //console.log(result.toJSON());
-    });
 });
 
 router.all("/UpdateQuantities", function(req, res) {
